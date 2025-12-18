@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TravelTalk - 五國語言全功能版</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts: Added 'Kanit' for Thai support -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Noto+Sans+JP:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Kanit:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f3f4f6; -webkit-tap-highlight-color: transparent; }
+        .font-jp { font-family: 'Noto Sans JP', sans-serif; }
+        .font-kr { font-family: 'Noto Sans KR', sans-serif; }
+        .font-th { font-family: 'Kanit', sans-serif; } /* Thai Font */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* 切換按鈕選中狀態 */
+        .tab-active {
+            background-color: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+        .tab-inactive {
+            background-color: #1f2937;
+            color: #9ca3af;
+            border-color: #374151;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden max-w-md mx-auto bg-white shadow-xl relative">
+
+    <!-- Header -->
+    <header class="bg-blue-600 text-white p-4 flex justify-between items-center shadow-md z-10 shrink-0">
+        <div>
+            <h1 class="text-xl font-bold"><i class="fa-solid fa-comments mr-2"></i>TravelTalk</h1>
+            <p class="text-xs text-blue-100">中英日韓泰 五語溝通板</p>
+        </div>
+        <button onclick="showInfo()" class="text-white hover:text-blue-200"><i class="fa-solid fa-circle-info text-xl"></i></button>
+    </header>
+
+    <!-- Categories -->
+    <div class="bg-white border-b border-gray-200 shrink-0">
+        <div class="flex overflow-x-auto no-scrollbar p-2 space-x-2" id="category-container"></div>
+    </div>
+
+    <!-- Content List -->
+    <main class="flex-1 overflow-y-auto p-4 bg-gray-50 pb-24" id="content-list"></main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-100 text-gray-500 text-xs text-center p-2 border-t shrink-0">
+        <p>點擊卡片開啟對話視窗</p>
+    </footer>
+
+    <!-- MAIN MODAL -->
+    <div id="translation-modal" onclick="if(event.target === this) closeModal()" class="fixed inset-0 z-50 hidden bg-black/95 flex-col justify-start items-center p-6 text-white transition-all duration-300 backdrop-blur-sm pt-8 overflow-y-auto cursor-pointer">
+        
+        <!-- Close Button -->
+        <button onclick="closeModal()" class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center bg-gray-800 rounded-full text-white hover:bg-gray-700 z-50 shadow-lg border border-gray-600">
+            <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+
+        <!-- Container -->
+        <div class="w-full max-w-sm space-y-4 text-center relative mt-2 cursor-auto pb-8">
+            
+            <!-- Dynamic Switcher Area -->
+            <div id="modal-switcher" class="hidden grid-cols-4 gap-2 mb-4">
+                <!-- Buttons injected by JS -->
+            </div>
+
+            <!-- Chinese (Operator View) -->
+            <div class="border-b border-gray-700 pb-2 mb-2">
+                <p class="text-gray-400 text-xs mb-1">您的意思 / You mean</p>
+                <h2 id="modal-zh" class="text-2xl font-bold text-white leading-snug">中文內容</h2>
+            </div>
+
+            <!-- Language Cards -->
+            <!-- EN -->
+            <div onclick="playAudio('en')" class="bg-gray-800 p-3 rounded-xl cursor-pointer hover:bg-gray-700 border border-gray-700 active:scale-[0.98] transition shadow-lg relative group">
+                <div class="flex justify-between items-start mb-1">
+                    <span class="text-[10px] text-green-400 font-bold uppercase tracking-wider bg-green-900/30 px-2 py-0.5 rounded">English</span>
+                    <i class="fa-solid fa-volume-high text-green-400/50 group-hover:text-green-400 transition"></i>
+                </div>
+                <p id="modal-en" class="text-lg font-bold text-gray-100 leading-snug text-left">English Text</p>
+            </div>
+
+            <!-- JP -->
+            <div onclick="playAudio('ja')" class="bg-gray-800 p-3 rounded-xl cursor-pointer hover:bg-gray-700 border border-gray-700 active:scale-[0.98] transition shadow-lg relative group">
+                <div class="flex justify-between items-start mb-1">
+                    <span class="text-[10px] text-pink-400 font-bold uppercase tracking-wider bg-pink-900/30 px-2 py-0.5 rounded">日本語</span>
+                    <i class="fa-solid fa-volume-high text-pink-400/50 group-hover:text-pink-400 transition"></i>
+                </div>
+                <p id="modal-jp" class="text-xl font-bold font-jp text-gray-100 leading-snug text-left">日本語テキスト</p>
+            </div>
+
+            <!-- KR -->
+            <div onclick="playAudio('ko')" class="bg-gray-800 p-3 rounded-xl cursor-pointer hover:bg-gray-700 border border-gray-700 active:scale-[0.98] transition shadow-lg relative group">
+                <div class="flex justify-between items-start mb-1">
+                    <span class="text-[10px] text-yellow-400 font-bold uppercase tracking-wider bg-yellow-900/30 px-2 py-0.5 rounded">한국어</span>
+                    <i class="fa-solid fa-volume-high text-yellow-400/50 group-hover:text-yellow-400 transition"></i>
+                </div>
+                <p id="modal-kr" class="text-xl font-bold font-kr text-gray-100 leading-snug text-left">한국어 텍스트</p>
+            </div>
+
+            <!-- TH (New) -->
+            <div onclick="playAudio('th')" class="bg-gray-800 p-3 rounded-xl cursor-pointer hover:bg-gray-700 border border-gray-700 active:scale-[0.98] transition shadow-lg relative group">
+                <div class="flex justify-between items-start mb-1">
+                    <span class="text-[10px] text-purple-400 font-bold uppercase tracking-wider bg-purple-900/30 px-2 py-0.5 rounded">ภาษาไทย</span>
+                    <i class="fa-solid fa-volume-high text-purple-400/50 group-hover:text-purple-400 transition"></i>
+                </div>
+                <p id="modal-th" class="text-xl font-bold font-th text-gray-100 leading-snug text-left">ข้อความภาษาไทย</p>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- Info Modal -->
+    <div id="info-modal" onclick="if(event.target === this) document.getElementById('info-modal').classList.add('hidden')" class="fixed inset-0 z-50 hidden bg-black/50 flex justify-center items-center p-4 backdrop-blur-sm cursor-pointer">
+        <div class="bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl cursor-auto">
+            <h3 class="text-xl font-bold text-gray-800 mb-2">使用說明</h3>
+            <p class="text-gray-600 mb-4 text-sm">支援中、英、日、韓、泰五種語言。</p>
+            <p class="text-gray-600 mb-6 text-sm">點擊黑色背景區域即可快速關閉視窗。</p>
+            <button onclick="document.getElementById('info-modal').classList.add('hidden')" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold">了解</button>
+        </div>
+    </div>
+
+    <script>
+        // 資料庫結構更新：增加 'th' 欄位
+        const phrases = [
+            // --- 互動/溝通 (Interaction) ---
+            { 
+                category: 'interaction', 
+                isDynamic: true,
+                title: '歡迎來到...(國家)', 
+                options: [
+                    { label: '台灣', zh: '歡迎來到台灣！', en: 'Welcome to Taiwan!', jp: '台湾へようこそ！', kr: '대만에 오신 것을 환영합니다!', th: 'ยินดีต้อนรับสู่ไต้หวัน!' },
+                    { label: '日本', zh: '歡迎來到日本！', en: 'Welcome to Japan!', jp: '日本へようこそ！', kr: '일본에 오신 것을 환영합니다!', th: 'ยินดีต้อนรับสู่ญี่ปุ่น!' },
+                    { label: '韓國', zh: '歡迎來到韓國！', en: 'Welcome to Korea!', jp: '韓国へようこそ！', kr: '한국에 오신 것을 환영합니다!', th: 'ยินดีต้อนรับสู่เกาหลี!' },
+                    { label: '泰國', zh: '歡迎來到泰國！', en: 'Welcome to Thailand!', jp: 'タイへようこそ！', kr: '태국에 오신 것을 환영합니다!', th: 'ยินดีต้อนรับสู่ประเทศไทย!' },
+                    { label: '美國', zh: '歡迎來到美國！', en: 'Welcome to the USA!', jp: 'アメリカへようこそ！', kr: '미국에 오신 것을 환영합니다!', th: 'ยินดีต้อนรับสู่อเมริกา!' }
+                ]
+            },
+            { 
+                category: 'interaction', 
+                isDynamic: true,
+                title: '你會說...(語言)嗎？', 
+                options: [
+                    { label: '中文', zh: '你會說中文嗎？', en: 'Do you speak Chinese?', jp: '中国語を話せますか？', kr: '중국어 하세요?', th: 'คุณพูดภาษาจีนได้ไหม?' },
+                    { label: '英文', zh: '你會說英文嗎？', en: 'Do you speak English?', jp: '英語を話せますか？', kr: '영어 하세요?', th: 'คุณพูดภาษาอังกฤษได้ไหม?' },
+                    { label: '日文', zh: '你會說日文嗎？', en: 'Do you speak Japanese?', jp: '日本語を話せますか？', kr: '일본어 하세요?', th: 'คุณพูดภาษาญี่ปุ่นได้ไหม?' },
+                    { label: '韓文', zh: '你會說韓文嗎？', en: 'Do you speak Korean?', jp: '한국어 하세요?', th: 'คุณพูดภาษาเกาหลีได้ไหม?' },
+                    { label: '泰文', zh: '你會說泰文嗎？', en: 'Do you speak Thai?', jp: 'タイ語を話せますか？', kr: '태국어 하세요?', th: 'คุณพูดภาษาไทยได้ไหม?' }
+                ]
+            },
+            { 
+                category: 'interaction', 
+                isDynamic: true,
+                title: '我不會說...(語言)', 
+                options: [
+                    { label: '中文', zh: '我不會說中文', en: 'I don\'t speak Chinese.', jp: '中国語は話せません。', kr: '중국어를 못합니다.', th: 'ฉันพูดภาษาจีนไม่ได้' },
+                    { label: '英文', zh: '我不會說英文', en: 'I don\'t speak English.', jp: '英語は話せません。', kr: '영어를 못합니다.', th: 'ฉันพูดภาษาอังกฤษไม่ได้' },
+                    { label: '日文', zh: '我不會說日文', en: 'I don\'t speak Japanese.', jp: '日本語は話せません。', kr: '일본어를 못합니다.', th: 'ฉันพูดภาษาญี่ปุ่นไม่ได้' },
+                    { label: '韓文', zh: '我不會說韓文', en: 'I don\'t speak Korean.', jp: '한국어를 못합니다.', th: 'ฉันพูดภาษาเกาหลีไม่ได้' },
+                    { label: '泰文', zh: '我不會說泰文', en: 'I don\'t speak Thai.', jp: 'タイ語は話せません。', kr: '태국어를 못합니다.', th: 'ฉันพูดภาษาไทยไม่ได้' }
+                ]
+            },
+            { 
+                category: 'interaction', 
+                isDynamic: true,
+                title: '請說...(語言)', 
+                options: [
+                    { label: '中文', zh: '請說中文', en: 'Please speak Chinese.', jp: '中国語で話してください。', kr: '중국어로 말해주세요.', th: 'กรุณาพูดภาษาจีน' },
+                    { label: '英文', zh: '請說英文', en: 'Please speak English.', jp: '英語で話してください。', kr: '영어로 말해주세요.', th: 'กรุณาพูดภาษาอังกฤษ' },
+                    { label: '慢一點', zh: '請說慢一點', en: 'Please speak slowly.', jp: 'もっとゆっくり話してください。', kr: '천천히 말해주세요.', th: 'กรุณาพูดช้าๆ' },
+                    { label: '泰文', zh: '請說泰文', en: 'Please speak Thai.', jp: 'タイ語で話してください。', kr: '태국어로 말해주세요.', th: 'กรุณาพูดภาษาไทย' }
+                ]
+            },
+            { category: 'interaction', zh: '我聽不懂', en: 'I don\'t understand.', jp: 'わかりません。', kr: '이해를 못 했어요.', th: 'ฉันไม่เข้าใจ' },
+            { category: 'interaction', zh: '請用Google翻譯', en: 'Please use Google Translate.', jp: 'Google翻訳を使ってください。', kr: '구글 번역기를 사용해주세요.', th: 'กรุณาใช้ Google Translate' },
+
+            // --- 餐廳/飲食 (Dining) ---
+            { 
+                category: 'dining', 
+                isDynamic: true,
+                title: '我們有...位 (人數)', 
+                options: [
+                    { label: '1位', zh: '一位', en: 'Table for one.', jp: '1名です。', kr: '한 명입니다.', th: '1 ท่าน' },
+                    { label: '2位', zh: '兩位', en: 'Table for two.', jp: '2名です。', kr: '두 명입니다.', th: '2 ท่าน' },
+                    { label: '3位', zh: '三位', en: 'Table for three.', jp: '3名です。', kr: '세 명입니다.', th: '3 ท่าน' },
+                    { label: '4位', zh: '四位', en: 'Table for four.', jp: '4名です。', kr: '네 명입니다.', th: '4 ท่าน' }
+                ]
+            },
+            { category: 'dining', zh: '請給我菜單', en: 'Menu, please.', jp: 'メニューをください。', kr: '메뉴판 주세요.', th: 'ขอเมนูหน่อย' },
+            { category: 'dining', zh: '請推薦好吃的', en: 'What do you recommend?', jp: 'おすすめは何ですか？', kr: '추천 메뉴 있나요?', th: 'มีอะไรแนะนำบ้าง?' },
+            { 
+                category: 'dining', 
+                isDynamic: true,
+                title: '我不吃... (飲食禁忌)', 
+                options: [
+                    { label: '生食', zh: '我不吃生食', en: 'I don\'t eat raw food.', jp: '生ものは食べられません。', kr: '날것은 못 먹습니다.', th: 'ฉันไม่กินของดิบ' }, 
+                    { label: '豬肉', zh: '我不吃豬肉', en: 'I don\'t eat pork.', jp: '豚肉は食べられません。', kr: '돼지고기는 못 먹습니다.', th: 'ฉันไม่กินหมู' },
+                    { label: '牛肉', zh: '我不吃牛肉', en: 'I don\'t eat beef.', jp: '牛肉は食べられません。', kr: '소고기는 못 먹습니다.', th: 'ฉันไม่กินเนื้อวัว' },
+                    { label: '海鮮', zh: '我不吃海鮮', en: 'I don\'t eat seafood.', jp: 'シーフードは食べられません。', kr: '해산물은 못 먹습니다.', th: 'ฉันไม่กินอาหารทะเล' },
+                    { label: '吃素', zh: '我吃素', en: 'I am vegetarian.', jp: 'ベジタリアンです。', kr: '저는 채식주의자입니다.', th: 'ฉันกินเจ' }
+                ]
+            },
+            { category: 'dining', zh: '不要香菜', en: 'No coriander / cilantro.', jp: 'パクチー抜きでお願いします。', kr: '고수는 빼주세요.', th: 'ไม่ใส่ผักชี' },
+            { category: 'dining', zh: '這會辣嗎？', en: 'Is this spicy?', jp: 'これは辛いですか？', kr: '이거 매워요?', th: 'เผ็ดไหม?' },
+            { category: 'dining', zh: '請給我水', en: 'Water, please.', jp: 'お水をください。', kr: '물 좀 주세요.', th: 'ขอน้ำเปล่าหน่อย' },
+            { category: 'dining', zh: '我要結帳', en: 'Check, please.', jp: 'お会計をお願いします。', kr: '계산해 주세요.', th: 'เก็บตังค์ด้วย / เช็คบิล' },
+            { category: 'dining', zh: '很好吃', en: 'It was delicious.', jp: '美味しかったです。', kr: '맛있었어요.', th: 'อร่อยมาก' },
+
+            // --- 觀光/景點 (Sightseeing) ---
+            { 
+                category: 'sightseeing', 
+                isDynamic: true,
+                title: '請問附近有...嗎？(尋找地點)', 
+                options: [
+                    { label: '咖啡廳', zh: '請問附近有咖啡廳嗎？', en: 'Is there a cafe nearby?', jp: '近くにカフェはありますか？', kr: '근처에 카페가 있나요?', th: 'มีคาเฟ่แถวนี้ไหม?' },
+                    { label: '教會', zh: '請問附近有基督教會嗎？', en: 'Is there a Christian church nearby?', jp: '近くに教会はありますか？', kr: '근처에 교회가 있나요?', th: 'มีโบสถ์คริสต์แถวนี้ไหม?' },
+                    { label: '佛寺', zh: '請問附近有佛寺嗎？', en: 'Is there a Buddhist temple nearby?', jp: '近くにお寺はありますか？', kr: '근처에 절이 있나요?', th: 'มีวัดแถวนี้ไหม?' },
+                    { label: '神社', zh: '請問附近有神社嗎？', en: 'Is there a shrine nearby?', jp: '近くに神社はありますか？', kr: '근처에 신사가 있나요?', th: 'มีศาลเจ้าแถวนี้ไหม?' },
+                    { label: '遊客中心', zh: '請問遊客中心在哪裡？', en: 'Where is the tourist info center?', jp: '観光案内所はどこですか？', kr: '관광 안내소는 어디예요?', th: 'ศูนย์บริการนักท่องเที่ยวอยู่ที่ไหน?' }
+                ]
+            },
+            { category: 'sightseeing', zh: '在哪裡買票？', en: 'Where can I buy tickets?', jp: 'チケットはどこで買えますか？', kr: '표는 어디서 사요?', th: 'ซื้อตั๋วที่ไหน?' },
+            { category: 'sightseeing', zh: '幾點開門/關門？', en: 'What are the opening hours?', jp: '営業時間は何時ですか？', kr: '영업시간이 어떻게 되나요?', th: 'เปิด/ปิดกี่โมง?' },
+            { category: 'sightseeing', zh: '這裡可以拍照嗎？', en: 'Is photography allowed here?', jp: 'ここで写真を撮ってもいいですか？', kr: '여기서 사진 찍어도 되나요?', th: 'ถ่ายรูปที่นี่ได้ไหม?' },
+            { category: 'sightseeing', zh: '這個地方在哪裡？', en: 'Where is this place?', jp: 'ここはどこですか？', kr: '여기는 어디인가요?', th: 'ที่นี่ที่ไหน?' },
+            { category: 'sightseeing', zh: '可以幫我拍照嗎？', en: 'Could you take a picture of me?', jp: '写真を撮ってもらえますか？', kr: '사진 좀 찍어주시겠어요?', th: 'ช่วยถ่ายรูปให้หน่อยได้ไหม?' },
+
+            // --- 購物 (Shopping) ---
+            { category: 'shopping', zh: '請問附近有二手店嗎？', en: 'Is there a second-hand shop nearby?', jp: '近くにリサイクルショップはありますか？', kr: '근처에 중고 가게가 있나요?', th: 'มีร้านมือสองแถวนี้ไหม?' },
+            { category: 'shopping', zh: '算便宜一點好嗎？', en: 'Can you give me a discount?', jp: 'まけてもらえませんか？', kr: '좀 깎아주세요.', th: 'ลดราคาหน่อยได้ไหม?' },
+            { category: 'shopping', zh: '太貴了', en: 'It is too expensive.', jp: '高すぎます。', kr: '너무 비싸요.', th: 'แพงเกินไป' },
+            { category: 'shopping', zh: '有折扣嗎？', en: 'Is there a discount?', jp: '割引はありますか？', kr: '할인이 있나요?', th: 'มีส่วนลดไหม?' },
+            { category: 'shopping', zh: '可以退稅嗎？', en: 'Is this tax-free?', jp: '免税にできますか？', kr: '면세가 되나요?', th: 'ขอคืนภาษีได้ไหม?' },
+            { category: 'shopping', zh: '只能付現金', en: 'Cash only, please.', jp: '現金のみです。', kr: '현금만 가능합니다.', th: 'รับเฉพาะเงินสด' },
+            { category: 'shopping', zh: '可以用信用卡嗎？', en: 'Credit card accepted?', jp: 'クレジットカードは使えますか？', kr: '카드 결제 되나요?', th: 'รับบัตรเครดิตไหม?' },
+            { category: 'shopping', zh: '多少錢？', en: 'How much is this?', jp: 'いくらですか？', kr: '얼마예요?', th: 'ราคาเท่าไหร่?' },
+            { category: 'shopping', zh: '這很受歡迎 (推薦)', en: 'This is very popular.', jp: 'これはとても人気があります。', kr: '이거 아주 인기 있어요.', th: 'อันนี้ขายดีมาก' },
+
+            // --- 緊急/醫療 (Emergency) ---
+            { category: 'emergency', zh: '救命！', en: 'Help!', jp: '助けて！', kr: '도와주세요!', th: 'ช่วยด้วย!' },
+            { category: 'emergency', zh: '我不舒服', en: 'I feel sick.', jp: '具合が悪いです。', kr: '몸이 안 좋아요.', th: 'ฉันรู้สึกไม่สบาย' },
+            { 
+                category: 'emergency', 
+                isDynamic: true,
+                title: '我遺失了... (物品)', 
+                options: [
+                    { label: '護照', zh: '我遺失了護照', en: 'I lost my passport.', jp: 'パスポートをなくしました。', kr: '여권을 잃어버렸어요.', th: 'ฉันทำพาสปอร์ตหาย' },
+                    { label: '錢包', zh: '我遺失了錢包', en: 'I lost my wallet.', jp: '財布をなくしました。', kr: '지갑을 잃어버렸어요.', th: 'ฉันทำกระเป๋าตังค์หาย' },
+                    { label: '手機', zh: '我遺失了手機', en: 'I lost my phone.', jp: '携帯をなくしました。', kr: '핸드폰을 잃어버렸어요.', th: 'ฉันทำโทรศัพท์หาย' }
+                ]
+            },
+            { category: 'emergency', zh: '請叫救護車', en: 'Call an ambulance!', jp: '救急車を呼んでください！', kr: '구급차 불러주세요!', th: 'เรียกรถพยาบาลให้หน่อย!' },
+            { category: 'emergency', zh: '警察局在哪裡？', en: 'Where is the police station?', jp: '警察署はどこですか？', kr: '경찰서는 어디예요?', th: 'สถานีตำรวจอยู่ที่ไหน?' },
+            { category: 'emergency', zh: '醫院在哪裡？', en: 'Where is the hospital?', jp: '病院はどこですか？', kr: '병원은 어디예요?', th: 'โรงพยาบาลอยู่ที่ไหน?' },
+
+            // --- 基礎 (Basic) ---
+            { 
+                category: 'basic', 
+                isDynamic: true,
+                title: '你是...人嗎？(國籍)', 
+                options: [
+                    { label: '美國', zh: '你是美國人嗎？', en: 'Are you from the US?', jp: 'アメリカの方ですか？', kr: '미국 분이신가요?', th: 'คุณมาจากอเมริกาใช่ไหม?' },
+                    { label: '日本', zh: '你是日本人嗎？', en: 'Are you Japanese?', jp: '日本人ですか？', kr: '일본 분이신가요?', th: 'คุณเป็นคนญี่ปุ่นใช่ไหม?' },
+                    { label: '韓國', zh: '你是韓國人嗎？', en: 'Are you Korean?', jp: '韓国の方ですか？', kr: '한국 분이신가요?', th: 'คุณเป็นคนเกาหลีใช่ไหม?' },
+                    { label: '台灣', zh: '你是台灣人嗎？', en: 'Are you Taiwanese?', jp: '台湾の方ですか？', kr: '대만 분이신가요?', th: 'คุณเป็นคนไต้หวันใช่ไหม?' },
+                    { label: '香港', zh: '你是香港人嗎？', en: 'Are you from Hong Kong?', jp: '香港の方ですか？', kr: '홍콩 분이신가요?', th: 'คุณมาจากฮ่องกงใช่ไหม?' },
+                    { label: '泰國', zh: '你是泰國人嗎？', en: 'Are you Thai?', jp: 'タイの方ですか？', kr: '태국 분이신가요?', th: 'คุณเป็นคนไทยใช่ไหม?' }
+                ]
+            },
+            { 
+                category: 'basic', 
+                isDynamic: true,
+                title: '早安 / 午安 / 晚安', 
+                options: [
+                    { label: '早安', zh: '早安', en: 'Good morning.', jp: 'おはようございます。', kr: '좋은 아침입니다.', th: 'สวัสดีตอนเช้า' },
+                    { label: '午安', zh: '你好 / 午安', en: 'Hello / Good afternoon.', jp: 'こんにちは。', kr: '안녕하세요.', th: 'สวัสดี' },
+                    { label: '晚安', zh: '晚安', en: 'Good evening.', jp: 'こんばんは。', kr: '좋은 저녁입니다.', th: 'สวัสดีตอนเย็น' }
+                ]
+            },
+            { category: 'basic', zh: '請稍等一下', en: 'Please wait a moment.', jp: '少々お待ちください。', kr: '잠시만 기다려 주세요.', th: 'กรุณารอสักครู่' },
+            { category: 'basic', zh: '謝謝', en: 'Thank you.', jp: 'ありがとうございます。', kr: '감사합니다.', th: 'ขอบคุณ' },
+            { category: 'basic', zh: '不好意思', en: 'Excuse me.', jp: 'すみません。', kr: '실례합니다.', th: 'ขอโทษนะ / ขอทางหน่อย' },
+
+            // --- 交通 (Transport) ---
+            { category: 'transport', zh: '這家飯店怎麼去？', en: 'How do I get to this hotel?', jp: 'このホテルへはどう行きますか？', kr: '이 호텔은 어떻게 가나요?', th: 'โรงแรมนี้ไปทางไหน?' },
+            { category: 'transport', zh: '地鐵站在哪裡？', en: 'Where is the subway station?', jp: '地下鉄の駅はどこですか？', kr: '지하철역은 어디예요?', th: 'สถานีรถไฟใต้ดินอยู่ที่ไหน?' },
+            { category: 'transport', zh: '請載我去這裡', en: 'Take me here, please.', jp: 'ここへ行ってください。', kr: '여기로 가주세요.', th: 'ช่วยไปส่งที่นี่หน่อย' },
+
+            // --- 住宿/設施 (Hotel) ---
+            { category: 'hotel', zh: '有免費Wi-Fi嗎？', en: 'Is there free Wi-Fi?', jp: '無料Wi-Fiはありますか？', kr: '무료 와이파이 있나요?', th: 'มีไวไฟฟรีไหม?' },
+            { category: 'hotel', zh: '洗手間在哪裡？', en: 'Where is the restroom?', jp: 'トイレはどこですか？', kr: '화장실은 어디예요?', th: 'ห้องน้ำอยู่ที่ไหน?' },
+            { category: 'hotel', zh: '請幫我叫計程車', en: 'Call a taxi, please.', jp: 'タクシーを呼んでいただけますか？', kr: '택시 좀 불러주세요.', th: 'ช่วยเรียกแท็กซี่ให้หน่อย' },
+        ];
+
+        const categories = [
+            { id: 'all', name: '全部', icon: 'fa-list' },
+            { id: 'interaction', name: '互動', icon: 'fa-comments' },
+            { id: 'sightseeing', name: '觀光', icon: 'fa-camera' }, 
+            { id: 'dining', name: '餐廳', icon: 'fa-utensils' },
+            { id: 'shopping', name: '購物', icon: 'fa-cart-shopping' },
+            { id: 'emergency', name: '緊急', icon: 'fa-truck-medical' },
+            { id: 'basic', name: '基礎', icon: 'fa-user' },
+            { id: 'transport', name: '交通', icon: 'fa-train-subway' },
+            { id: 'hotel', name: '住宿', icon: 'fa-hotel' }
+        ];
+
+        let currentCategory = 'all';
+        let activePhraseData = null; 
+        let originalDynamicItem = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCategories();
+            renderList();
+        });
+
+        function renderCategories() {
+            const container = document.getElementById('category-container');
+            container.innerHTML = categories.map(cat => `
+                <button onclick="setCategory('${cat.id}')"
+                    class="px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition flex items-center gap-2 select-none
+                    ${currentCategory === cat.id ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}">
+                    <i class="fa-solid ${cat.icon}"></i> ${cat.name}
+                </button>
+            `).join('');
+        }
+
+        function setCategory(id) {
+            currentCategory = id;
+            renderCategories();
+            renderList();
+        }
+
+        function renderList() {
+            const list = document.getElementById('content-list');
+            let items = currentCategory === 'all' ? phrases : phrases.filter(p => p.category === currentCategory);
+            
+            const categoryOrder = { 'interaction': 1, 'sightseeing': 2, 'dining': 3, 'shopping': 4, 'emergency': 5 };
+            
+            items.sort((a, b) => {
+                if (currentCategory === 'all') {
+                    const orderA = categoryOrder[a.category] || 99;
+                    const orderB = categoryOrder[b.category] || 99;
+                    if (orderA !== orderB) return orderA - orderB;
+                }
+                return (b.isDynamic ? 1 : 0) - (a.isDynamic ? 1 : 0);
+            });
+
+            if (items.length === 0) {
+                list.innerHTML = `<div class="text-center text-gray-400 mt-20"><p>沒有相關內容</p></div>`;
+                return;
+            }
+
+            list.innerHTML = items.map((item) => {
+                const displayTitle = item.isDynamic ? item.title : item.zh;
+                const subTitle = item.isDynamic ? '點擊切換多種選項' : item.en;
+                const originalIndex = phrases.indexOf(item);
+                
+                let borderClass = 'border border-gray-100';
+                if (item.category === 'interaction') borderClass = 'border-l-4 border-l-blue-400 border-y border-r border-gray-100';
+                if (item.category === 'sightseeing') borderClass = 'border-l-4 border-l-purple-500 border-y border-r border-gray-100';
+                if (item.category === 'dining') borderClass = 'border-l-4 border-l-orange-400 border-y border-r border-gray-100';
+                if (item.category === 'emergency') borderClass = 'border-l-4 border-l-red-500 border-y border-r border-gray-100';
+                if (item.category === 'shopping') borderClass = 'border-l-4 border-l-green-400 border-y border-r border-gray-100'; 
+                
+                return `
+                <div onclick="openModal(${originalIndex})" class="bg-white p-4 mb-3 rounded-xl shadow-sm ${borderClass} active:bg-gray-100 transition cursor-pointer flex justify-between items-center group select-none">
+                    <div class="flex-1 pr-4">
+                        <div class="flex items-center gap-2">
+                            ${item.isDynamic ? '<i class="fa-solid fa-layer-group text-blue-500 text-xs"></i>' : ''}
+                            <h3 class="text-lg font-bold text-gray-800 mb-1 leading-tight">${displayTitle}</h3>
+                        </div>
+                        <p class="text-xs text-gray-400 truncate font-medium">${subTitle}</p>
+                    </div>
+                    <div class="text-blue-500 bg-blue-50 w-10 h-10 flex items-center justify-center rounded-full group-hover:bg-blue-600 group-hover:text-white transition shrink-0">
+                        <i class="fa-solid ${item.isDynamic ? 'fa-sliders' : 'fa-expand'}"></i>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        // --- Modal Logic ---
+
+        function openModal(index) {
+            const item = phrases[index];
+            const modal = document.getElementById('translation-modal');
+            const switcher = document.getElementById('modal-switcher');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            if (item.isDynamic) {
+                originalDynamicItem = item;
+                switcher.classList.remove('hidden');
+                switcher.classList.add('grid');
+                
+                const count = item.options.length;
+                let cols = 'grid-cols-3';
+                if (count <= 2) cols = 'grid-cols-2';
+                if (count >= 4) cols = 'grid-cols-4';
+                
+                switcher.className = `grid gap-2 mb-4 ${cols}`;
+
+                switcher.innerHTML = item.options.map((opt, idx) => `
+                    <button onclick="switchDynamicOption(${idx})" class="py-2 text-xs font-bold rounded border transition tab-inactive truncate">
+                        ${opt.label}
+                    </button>
+                `).join('');
+
+                switchDynamicOption(0);
+
+            } else {
+                originalDynamicItem = null;
+                activePhraseData = item;
+                switcher.classList.add('hidden');
+                switcher.classList.remove('grid');
+                updateModalText(item);
+            }
+        }
+
+        function switchDynamicOption(subIndex) {
+            if (!originalDynamicItem) return;
+            
+            const buttons = document.querySelectorAll('#modal-switcher button');
+            buttons.forEach((btn, idx) => {
+                if (idx === subIndex) {
+                    btn.classList.remove('tab-inactive');
+                    btn.classList.add('tab-active');
+                } else {
+                    btn.classList.add('tab-inactive');
+                    btn.classList.remove('tab-active');
+                }
+            });
+
+            activePhraseData = originalDynamicItem.options[subIndex];
+            updateModalText(activePhraseData);
+        }
+
+        function updateModalText(data) {
+            document.getElementById('modal-zh').textContent = data.zh;
+            document.getElementById('modal-en').textContent = data.en;
+            document.getElementById('modal-jp').textContent = data.jp;
+            document.getElementById('modal-kr').textContent = data.kr;
+            document.getElementById('modal-th').textContent = data.th || '';
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('translation-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            window.speechSynthesis.cancel();
+        }
+
+        function playAudio(lang) {
+            if (!activePhraseData) return;
+            window.speechSynthesis.cancel();
+
+            let text = '';
+            let langCode = '';
+            switch(lang) {
+                case 'en': text = activePhraseData.en; langCode = 'en-US'; break;
+                case 'ja': text = activePhraseData.jp; langCode = 'ja-JP'; break;
+                case 'ko': text = activePhraseData.kr; langCode = 'ko-KR'; break;
+                case 'th': text = activePhraseData.th; langCode = 'th-TH'; break;
+            }
+
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = langCode;
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+    </script>
+</body>
+</html>
