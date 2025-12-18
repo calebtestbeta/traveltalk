@@ -127,7 +127,8 @@
             <h3 class="text-xl font-bold text-gray-800 mb-2">使用說明</h3>
             <p class="text-gray-600 mb-4 text-sm">支援中、英、日、韓、泰五種語言。</p>
             <p class="text-gray-600 mb-6 text-sm">點擊黑色背景區域即可快速關閉視窗。</p>
-            <button onclick="document.getElementById('info-modal').classList.add('hidden')" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold">了解</button>
+            <p class="text-red-500 text-xs mt-2">*iPhone 用戶若發音異常，請至 設定 > 輔助使用 > 語音內容 > 聲音，確認已下載對應語言的語音包。</p>
+            <button onclick="document.getElementById('info-modal').classList.add('hidden')" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold mt-4">了解</button>
         </div>
     </div>
 
@@ -460,6 +461,19 @@
             modal.classList.remove('flex');
             window.speechSynthesis.cancel();
         }
+        
+        // 預先載入聲音列表 (解決某些瀏覽器第一次抓不到的問題)
+        let voices = [];
+        function loadVoices() {
+            voices = window.speechSynthesis.getVoices();
+        }
+        
+        if ('speechSynthesis' in window) {
+            loadVoices();
+            if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                window.speechSynthesis.onvoiceschanged = loadVoices;
+            }
+        }
 
         function playAudio(lang) {
             if (!activePhraseData) return;
@@ -476,8 +490,26 @@
 
             if ('speechSynthesis' in window) {
                 const utterance = new SpeechSynthesisUtterance(text);
+                
+                // 確保重新獲取最新的聲音列表
+                if (voices.length === 0) {
+                    voices = window.speechSynthesis.getVoices();
+                }
+
+                // 針對 iOS 優化：嘗試找到匹配的聲音，避免使用預設(中文/英文)聲音來唸外語
+                const targetVoice = voices.find(v => {
+                    const vLang = v.lang.replace('_', '-'); // 統一格式 (iOS 有時用底線)
+                    return vLang === langCode || vLang.startsWith(langCode.split('-')[0]);
+                });
+
+                if (targetVoice) {
+                    utterance.voice = targetVoice;
+                }
+                
+                // 無論有沒有找到特定 voice，lang 屬性還是要設，作為最後一道防線
                 utterance.lang = langCode;
                 utterance.rate = 0.9;
+                
                 window.speechSynthesis.speak(utterance);
             }
         }
