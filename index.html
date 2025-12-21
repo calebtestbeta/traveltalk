@@ -138,9 +138,19 @@
                 <li><i class="fa-solid fa-magnifying-glass text-gray-400"></i> 上方搜尋框可快速查找對話。</li>
                 <li>支援中、英、日、韓、泰五語發音。</li>
             </ul>
-            <p class="text-red-500 text-xs mt-2">*iPhone 用戶若發音異常，請至 設定 > 輔助使用 > 語音內容 > 聲音，確認已下載語音包。</p>
-            
-            <button onclick="document.getElementById('info-modal').classList.add('hidden')" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold mt-4">了解</button>
+            <div class="bg-orange-50 border-l-4 border-orange-400 p-3 mt-3 rounded">
+                <p class="text-orange-800 text-xs font-bold mb-2">📱 語音包下載提醒</p>
+                <p class="text-orange-700 text-xs">• iPhone: 設定 > 輔助使用 > 語音內容 > 聲音</p>
+                <p class="text-orange-700 text-xs">• Android: 設定 > 系統 > 語言和輸入 > 文字轉語音輸出</p>
+                <p class="text-orange-600 text-[10px] mt-2">*若無聲音或發音錯誤，請確認已下載對應語言的語音包</p>
+            </div>
+
+            <button onclick="checkVoiceAvailability()" class="w-full bg-gray-600 text-white py-3 rounded-lg font-bold mt-3 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-check-circle"></i>
+                檢測語音包安裝狀態
+            </button>
+
+            <button onclick="document.getElementById('info-modal').classList.add('hidden')" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold mt-2">了解</button>
             
             <!-- Version Number -->
             <p class="text-gray-300 text-[10px] text-center mt-3">Ver 1.0.0</p>
@@ -594,55 +604,267 @@
         }
         
         let voices = [];
+        let voiceAvailability = {
+            'en-US': false,
+            'ja-JP': false,
+            'ko-KR': false,
+            'th-TH': false
+        };
+
         function loadVoices() {
             voices = window.speechSynthesis.getVoices();
+
+            // 檢測各語言是否有可用語音
+            voiceAvailability['en-US'] = voices.some(v => v.lang.startsWith('en'));
+            voiceAvailability['ja-JP'] = voices.some(v => v.lang.startsWith('ja'));
+            voiceAvailability['ko-KR'] = voices.some(v => v.lang.startsWith('ko'));
+            voiceAvailability['th-TH'] = voices.some(v => v.lang.startsWith('th'));
+
+            updateVoiceIndicators();
         }
-        
+
+        function updateVoiceIndicators() {
+            // 在彈窗中顯示語音可用性（如果需要）
+            const indicators = {
+                'en': voiceAvailability['en-US'],
+                'ja': voiceAvailability['ja-JP'],
+                'ko': voiceAvailability['ko-KR'],
+                'th': voiceAvailability['th-TH']
+            };
+        }
+
         if ('speechSynthesis' in window) {
             loadVoices();
             if (window.speechSynthesis.onvoiceschanged !== undefined) {
                 window.speechSynthesis.onvoiceschanged = loadVoices;
             }
+
+            // Android 設備需要初次用戶互動來啟動 TTS
+            document.addEventListener('click', function initTTS() {
+                if (voices.length === 0) {
+                    loadVoices();
+                }
+            }, { once: true });
         }
 
         function playAudio(lang) {
             if (!activePhraseData) return;
+
+            // Android Chrome 需要先 cancel 再等一下
             window.speechSynthesis.cancel();
 
             let text = '';
             let langCode = '';
+            let langName = '';
             switch(lang) {
-                case 'en': text = activePhraseData.en; langCode = 'en-US'; break;
-                case 'ja': text = activePhraseData.jp; langCode = 'ja-JP'; break;
-                case 'ko': text = activePhraseData.kr; langCode = 'ko-KR'; break;
-                case 'th': text = activePhraseData.th; langCode = 'th-TH'; break;
+                case 'en':
+                    text = activePhraseData.en;
+                    langCode = 'en-US';
+                    langName = '英文';
+                    break;
+                case 'ja':
+                    text = activePhraseData.jp;
+                    langCode = 'ja-JP';
+                    langName = '日文';
+                    break;
+                case 'ko':
+                    text = activePhraseData.kr;
+                    langCode = 'ko-KR';
+                    langName = '韓文';
+                    break;
+                case 'th':
+                    text = activePhraseData.th;
+                    langCode = 'th-TH';
+                    langName = '泰文';
+                    break;
             }
 
-            if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(text);
-                const isAndroid = /Android/i.test(navigator.userAgent);
-                
-                if (isAndroid) {
-                     utterance.lang = langCode;
-                } else {
-                    if (voices.length === 0) {
-                        voices = window.speechSynthesis.getVoices();
-                    }
-                    const targetVoice = voices.find(v => {
-                        const vLang = v.lang.replace('_', '-'); 
-                        return vLang === langCode || vLang.startsWith(langCode.split('-')[0]);
-                    });
-                    if (targetVoice) {
-                        utterance.voice = targetVoice;
-                    }
-                    utterance.lang = langCode;
+            if (!('speechSynthesis' in window)) {
+                showVoiceWarning('您的瀏覽器不支援語音播放', '請使用 Chrome 或 Safari 瀏覽器');
+                return;
+            }
+
+            // Android 需要稍微延遲
+            const isAndroid = /Android/i.test(navigator.userAgent);
+            const delay = isAndroid ? 150 : 0;
+
+            setTimeout(() => {
+                // 確保 voices 已載入
+                if (voices.length === 0) {
+                    voices = window.speechSynthesis.getVoices();
+                    loadVoices(); // 更新可用性狀態
                 }
 
+                // 檢查是否有該語言的語音包
+                const hasVoice = voices.some(v => {
+                    const vLang = v.lang.replace('_', '-');
+                    return vLang === langCode || vLang.startsWith(langCode.split('-')[0]);
+                });
+
+                if (!hasVoice) {
+                    showVoiceWarning(
+                        `您的設備未安裝${langName}語音包`,
+                        isAndroid
+                            ? `請至：設定 → 系統 → 語言和輸入法 → 文字轉語音輸出\n\n下載「${langName}」語音引擎後重新整理網頁`
+                            : `請至：設定 → 輔助使用 → 語音內容 → 聲音\n\n下載「${langName}」語音包後重新整理網頁`
+                    );
+                    return;
+                }
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = langCode;
                 utterance.rate = 0.9;
+                utterance.pitch = 1.0;
+                utterance.volume = 1.0;
+
+                // 嘗試找到最適合的語音（優先非中文語音，避免用中文讀外語）
+                const targetVoice = voices.find(v => {
+                    const vLang = v.lang.replace('_', '-');
+                    // 完全匹配優先
+                    if (vLang === langCode) return true;
+                    // 語言前綴匹配（如 en-US, en-GB）
+                    if (vLang.startsWith(langCode.split('-')[0])) return true;
+                    return false;
+                });
+
+                if (targetVoice) {
+                    utterance.voice = targetVoice;
+                    console.log(`使用語音: ${targetVoice.name} (${targetVoice.lang})`);
+                }
+
+                // 錯誤處理
+                utterance.onerror = (event) => {
+                    console.error('語音播放錯誤:', event);
+                    if (event.error === 'not-allowed') {
+                        showVoiceWarning('無法播放聲音', '請確認已允許網頁播放聲音');
+                    } else if (event.error === 'language-unavailable') {
+                        showVoiceWarning(
+                            `${langName}語音不可用`,
+                            '請在系統設定中下載對應的語音包'
+                        );
+                    } else {
+                        showVoiceWarning('播放失敗', `錯誤代碼: ${event.error}`);
+                    }
+                };
+
+                // 播放開始事件（用於除錯）
+                utterance.onstart = () => {
+                    console.log(`開始播放: ${text}`);
+                };
+
+                // Android Chrome 的 workaround
+                if (isAndroid) {
+                    window.speechSynthesis.resume();
+                }
+
                 window.speechSynthesis.speak(utterance);
-            }
+
+            }, delay);
+        }
+
+        // 顯示語音警告彈窗
+        function showVoiceWarning(title, message) {
+            const alertHtml = `
+                <div id="voice-alert" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div class="bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl">
+                        <h3 class="text-xl font-bold text-gray-800 mb-3">${title}</h3>
+                        <p class="text-sm text-gray-600 mb-6 whitespace-pre-line leading-relaxed">${message}</p>
+                        <button onclick="document.getElementById('voice-alert').remove()"
+                            class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg">
+                            我知道了
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', alertHtml);
         }
         
+        // 檢測語音包可用性
+        function checkVoiceAvailability() {
+            // 確保 voices 已載入
+            if (voices.length === 0) {
+                voices = window.speechSynthesis.getVoices();
+                loadVoices();
+            }
+
+            const langTests = [
+                { code: 'en-US', name: '英文 (English)', prefix: 'en' },
+                { code: 'ja-JP', name: '日文 (日本語)', prefix: 'ja' },
+                { code: 'ko-KR', name: '韓文 (한국어)', prefix: 'ko' },
+                { code: 'th-TH', name: '泰文 (ไทย)', prefix: 'th' }
+            ];
+
+            let resultsHtml = '<div class="space-y-2 text-left mb-4">';
+
+            langTests.forEach(lang => {
+                const hasVoice = voices.some(v => {
+                    const vLang = v.lang.replace('_', '-');
+                    return vLang === lang.code || vLang.startsWith(lang.prefix);
+                });
+
+                const voiceList = voices
+                    .filter(v => v.lang.replace('_', '-').startsWith(lang.prefix))
+                    .map(v => v.name)
+                    .slice(0, 2);
+
+                const icon = hasVoice
+                    ? '<i class="fa-solid fa-circle-check text-green-500"></i>'
+                    : '<i class="fa-solid fa-circle-xmark text-red-500"></i>';
+
+                const status = hasVoice
+                    ? `<span class="text-green-700 font-bold">已安裝</span>`
+                    : `<span class="text-red-600 font-bold">未安裝</span>`;
+
+                const details = hasVoice && voiceList.length > 0
+                    ? `<div class="text-[10px] text-gray-500 ml-6 mt-1">可用: ${voiceList.join(', ')}</div>`
+                    : '';
+
+                resultsHtml += `
+                    <div class="flex items-start gap-2 p-2 rounded bg-gray-50">
+                        <div class="mt-0.5">${icon}</div>
+                        <div class="flex-1">
+                            <div class="text-sm font-medium text-gray-800">${lang.name}</div>
+                            <div class="text-xs">${status}</div>
+                            ${details}
+                        </div>
+                    </div>
+                `;
+            });
+
+            resultsHtml += '</div>';
+
+            const isAndroid = /Android/i.test(navigator.userAgent);
+            const deviceTip = isAndroid
+                ? '<p class="text-xs text-gray-600 mb-3">Android 用戶請至：<br><b>設定 → 系統 → 語言和輸入法 → 文字轉語音輸出</b><br>下載 Google 文字轉語音引擎與對應語言</p>'
+                : '<p class="text-xs text-gray-600 mb-3">iPhone 用戶請至：<br><b>設定 → 輔助使用 → 語音內容 → 聲音</b><br>下載對應語言的語音包</p>';
+
+            const totalAvailable = langTests.filter(lang =>
+                voices.some(v => v.lang.replace('_', '-').startsWith(lang.prefix))
+            ).length;
+
+            const alertHtml = `
+                <div id="voice-check-result" class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div class="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">語音包檢測結果</h3>
+                        <p class="text-sm text-gray-600 mb-4">共偵測到 ${totalAvailable}/4 種語言可用</p>
+
+                        ${resultsHtml}
+
+                        ${deviceTip}
+
+                        <p class="text-xs text-gray-500 mb-4">*下載語音包後請重新整理網頁</p>
+
+                        <button onclick="document.getElementById('voice-check-result').remove()"
+                            class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg">
+                            關閉
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', alertHtml);
+        }
+
         // Added showInfo function to fix ReferenceError
         function showInfo() {
             document.getElementById('info-modal').classList.remove('hidden');
