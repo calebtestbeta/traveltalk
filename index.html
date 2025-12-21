@@ -734,7 +734,20 @@
 
                 // 錯誤處理
                 utterance.onerror = (event) => {
+                    // "canceled" 是正常情況（用戶切換語言或快速點擊），不需要顯示錯誤
+                    if (event.error === 'canceled') {
+                        console.log('語音播放被取消（正常）');
+                        return;
+                    }
+
+                    // "interrupted" 也是正常情況（被新的播放打斷）
+                    if (event.error === 'interrupted') {
+                        console.log('語音播放被中斷（正常）');
+                        return;
+                    }
+
                     console.error('語音播放錯誤:', event);
+
                     if (event.error === 'not-allowed') {
                         showVoiceWarning('無法播放聲音', '請確認已允許網頁播放聲音');
                     } else if (event.error === 'language-unavailable') {
@@ -742,7 +755,12 @@
                             `${langName}語音不可用`,
                             '請在系統設定中下載對應的語音包'
                         );
+                    } else if (event.error === 'network') {
+                        showVoiceWarning('網路錯誤', '請檢查網路連線後重試');
+                    } else if (event.error === 'synthesis-failed') {
+                        showVoiceWarning('播放失敗', '語音合成失敗，請稍後再試');
                     } else {
+                        // 其他未知錯誤才顯示
                         showVoiceWarning('播放失敗', `錯誤代碼: ${event.error}`);
                     }
                 };
@@ -762,21 +780,44 @@
             }, delay);
         }
 
-        // 顯示語音警告彈窗
+        // 顯示自動消失的 Toast 通知
         function showVoiceWarning(title, message) {
-            const alertHtml = `
-                <div id="voice-alert" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div class="bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl">
-                        <h3 class="text-xl font-bold text-gray-800 mb-3">${title}</h3>
-                        <p class="text-sm text-gray-600 mb-6 whitespace-pre-line leading-relaxed">${message}</p>
-                        <button onclick="document.getElementById('voice-alert').remove()"
-                            class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg">
-                            我知道了
-                        </button>
+            const toastId = 'toast-' + Date.now();
+            const toastHtml = `
+                <div id="${toastId}" class="fixed top-20 left-1/2 transform -translate-x-1/2 z-[60] max-w-sm w-[calc(100%-2rem)] mx-auto opacity-0 transition-all duration-300">
+                    <div class="bg-white rounded-xl p-4 shadow-2xl border border-gray-200">
+                        <div class="flex items-start gap-3">
+                            <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-orange-100">
+                                <i class="fa-solid fa-exclamation text-orange-600 text-sm"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="text-sm font-bold text-gray-800 mb-1">${title}</h4>
+                                <p class="text-xs text-gray-600 leading-relaxed whitespace-pre-line">${message}</p>
+                            </div>
+                            <button onclick="document.getElementById('${toastId}').remove()" class="flex-shrink-0 text-gray-400 hover:text-gray-600">
+                                <i class="fa-solid fa-xmark text-sm"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
-            document.body.insertAdjacentHTML('beforeend', alertHtml);
+
+            document.body.insertAdjacentHTML('beforeend', toastHtml);
+
+            const toast = document.getElementById(toastId);
+
+            // 淡入動畫
+            setTimeout(() => {
+                toast.style.opacity = '1';
+                toast.style.top = '5rem';
+            }, 10);
+
+            // 4 秒後自動消失
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.top = '4rem';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
         }
         
         // 檢測語音包可用性
