@@ -17,6 +17,15 @@
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-K4KQF3YMT0"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-K4KQF3YMT0');
+    </script>
+
     <style>
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f3f4f6; -webkit-tap-highlight-color: transparent; }
         .font-jp { font-family: 'Noto Sans JP', sans-serif; }
@@ -150,7 +159,27 @@
                 檢測語音包安裝狀態
             </button>
 
-            <button onclick="document.getElementById('info-modal').classList.add('hidden')" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold mt-2">了解</button>
+            <!-- 建議功能 -->
+            <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <p class="text-sm font-bold text-gray-800 mb-2">💡 希望新增什麼對話場景？</p>
+                <p class="text-xs text-gray-600 mb-3">您的建議將幫助我們改進 TravelTalk</p>
+                <textarea id="suggestion-input"
+                    placeholder="例如：在郵局寄包裹、租借腳踏車..."
+                    class="w-full p-2 text-sm border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    rows="2"
+                    maxlength="100"></textarea>
+                <p class="text-xs text-gray-400 mt-1">
+                    <i class="fa-solid fa-shield-halved"></i> 此為匿名統計，請勿輸入個人資料
+                </p>
+                <div id="suggestion-warning" class="hidden mt-2 p-2 bg-yellow-50 border border-yellow-300 rounded text-xs text-yellow-800">
+                    <i class="fa-solid fa-triangle-exclamation"></i> <span id="suggestion-warning-text"></span>
+                </div>
+                <button onclick="submitSuggestion()" class="w-full bg-green-600 text-white py-2 rounded-lg font-bold mt-3 text-sm">
+                    <i class="fa-solid fa-paper-plane"></i> 送出建議
+                </button>
+            </div>
+
+            <button onclick="document.getElementById('info-modal').classList.add('hidden')" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold mt-4">了解</button>
             
             <!-- Version Number -->
             <p class="text-gray-300 text-[10px] text-center mt-3">Ver 1.0.0</p>
@@ -617,10 +646,30 @@
             });
 
             if (items.length === 0) {
-                const emptyMsg = currentCategory === 'favorites' 
-                    ? '還沒有加入常用對話<br><span class="text-xs">點擊星星圖示即可加入</span>' 
-                    : '沒有找到相關內容';
-                list.innerHTML = `<div class="text-center text-gray-400 mt-20"><p>${emptyMsg}</p></div>`;
+                let emptyMsg = '';
+                if (currentCategory === 'favorites') {
+                    emptyMsg = `
+                        <div class="text-center text-gray-400 mt-20">
+                            <p>還沒有加入常用對話<br><span class="text-xs">點擊星星圖示即可加入</span></p>
+                        </div>
+                    `;
+                } else if (searchQuery) {
+                    // 搜尋失敗 - 顯示建議回報
+                    emptyMsg = `
+                        <div class="text-center mt-20">
+                            <div class="text-gray-400 mb-4">
+                                <i class="fa-solid fa-magnifying-glass text-4xl mb-2"></i>
+                                <p class="text-lg">找不到「<span class="text-gray-600 font-bold">${searchQuery}</span>」相關內容 😢</p>
+                            </div>
+                            <button onclick="suggestFromSearch('${searchQuery}')" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold shadow-md hover:bg-blue-700">
+                                <i class="fa-solid fa-lightbulb"></i> 建議新增這個場景
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    emptyMsg = `<div class="text-center text-gray-400 mt-20"><p>沒有找到相關內容</p></div>`;
+                }
+                list.innerHTML = emptyMsg;
                 return;
             }
 
@@ -1049,6 +1098,203 @@
         // Added showInfo function to fix ReferenceError
         function showInfo() {
             document.getElementById('info-modal').classList.remove('hidden');
+        }
+
+        // === 建議功能相關函數 ===
+
+        // 驗證建議內容
+        function validateSuggestion(text) {
+            // 1. 基本檢查
+            if (!text || text.trim().length === 0) {
+                return { valid: false, message: '請輸入建議內容' };
+            }
+
+            // 2. 長度限制
+            const length = text.trim().length;
+            if (length < 5) {
+                return { valid: false, message: '建議內容至少 5 個字' };
+            }
+            if (length > 100) {
+                return { valid: false, message: '建議內容不能超過 100 字' };
+            }
+
+            // 3. 過濾重複字符（aaaaaaa）
+            if (/(.)\1{4,}/.test(text)) {
+                return { valid: false, message: '請輸入有意義的內容' };
+            }
+
+            // 4. 過濾純符號或亂碼
+            if (/^[^\w\u4e00-\u9fa5]+$/.test(text)) {
+                return { valid: false, message: '請輸入文字內容' };
+            }
+
+            // 5. 過濾純數字
+            if (/^\d+$/.test(text)) {
+                return { valid: false, message: '請輸入有意義的建議' };
+            }
+
+            return { valid: true };
+        }
+
+        // 檢查隱私風險
+        function checkPrivacyRisk(text) {
+            // 偵測電話號碼
+            if (/\d{9,11}/.test(text)) {
+                return '內容疑似包含電話號碼';
+            }
+            // 偵測 Email
+            if (/@.+\..+/.test(text)) {
+                return '內容疑似包含 Email';
+            }
+            // 偵測身分證格式（台灣）
+            if (/[A-Z]\d{9}/.test(text)) {
+                return '內容疑似包含身分證字號';
+            }
+            return null;
+        }
+
+        // 檢查 Rate Limiting（一小時 20 次）
+        function canSubmitSuggestion() {
+            const LIMIT = 20; // 一小時最多 20 次
+            const WINDOW = 60 * 60 * 1000; // 一小時（毫秒）
+
+            // 從 localStorage 讀取送出記錄
+            const historyStr = localStorage.getItem('suggestion_history');
+            let history = historyStr ? JSON.parse(historyStr) : [];
+
+            // 過濾掉一小時前的記錄
+            const now = Date.now();
+            history = history.filter(timestamp => now - timestamp < WINDOW);
+
+            // 檢查是否超過限制
+            if (history.length >= LIMIT) {
+                // 找出最早的記錄，計算何時可以再送出
+                const oldestTimestamp = Math.min(...history);
+                const nextAvailableTime = oldestTimestamp + WINDOW;
+                const waitTime = nextAvailableTime - now;
+                const waitMinutes = Math.ceil(waitTime / (60 * 1000));
+
+                return {
+                    canSubmit: false,
+                    message: `您已達到一小時 ${LIMIT} 次的上限，請 ${waitMinutes} 分鐘後再試`
+                };
+            }
+
+            // 更新 localStorage（清理舊記錄）
+            localStorage.setItem('suggestion_history', JSON.stringify(history));
+
+            return {
+                canSubmit: true,
+                remaining: LIMIT - history.length // 剩餘次數
+            };
+        }
+
+        // 記錄送出時間
+        function recordSubmission() {
+            const historyStr = localStorage.getItem('suggestion_history');
+            let history = historyStr ? JSON.parse(historyStr) : [];
+
+            // 添加當前時間戳記
+            history.push(Date.now());
+
+            // 只保留最近 20 筆（避免無限增長）
+            if (history.length > 20) {
+                history = history.slice(-20);
+            }
+
+            localStorage.setItem('suggestion_history', JSON.stringify(history));
+        }
+
+        // 送出 GA Event
+        function sendGAEvent(eventName, params) {
+            if (typeof gtag !== 'undefined') {
+                gtag('event', eventName, params);
+                console.log('GA Event 已送出:', eventName, params);
+            } else {
+                console.warn('GA 未初始化，無法送出 event');
+            }
+        }
+
+        // 統一的建議送出邏輯（DRY 原則）
+        function processSuggestion(text, source) {
+            // source: 'search' | 'manual'
+
+            // 1. 驗證內容
+            const validation = validateSuggestion(text);
+            if (!validation.valid) {
+                showVoiceWarning('無法送出建議', validation.message);
+                return false;
+            }
+
+            // 2. 檢查 rate limiting
+            const rateLimitCheck = canSubmitSuggestion();
+            if (!rateLimitCheck.canSubmit) {
+                showVoiceWarning('送出太頻繁', rateLimitCheck.message);
+                return false;
+            }
+
+            // 3. 檢查隱私風險
+            const privacyRisk = checkPrivacyRisk(text);
+            if (privacyRisk) {
+                console.warn('建議包含隱私風險:', privacyRisk, text);
+
+                // 如果是手動輸入，在 modal 中顯示警告（但不阻擋）
+                if (source === 'manual') {
+                    const warningDiv = document.getElementById('suggestion-warning');
+                    const warningText = document.getElementById('suggestion-warning-text');
+                    warningText.textContent = privacyRisk;
+                    warningDiv.classList.remove('hidden');
+                }
+                // 不阻擋送出，只是警告
+            }
+
+            // 4. 送出 GA Event
+            if (source === 'search') {
+                sendGAEvent('search_not_found', {
+                    search_keyword: text,
+                    event_category: 'user_suggestion',
+                    event_label: `搜尋建議: ${text}`
+                });
+            } else if (source === 'manual') {
+                sendGAEvent('user_suggestion', {
+                    event_category: 'user_suggestion',
+                    event_label: `手動建議: ${text}`,
+                    suggestion_text: text
+                });
+            }
+
+            // 5. 記錄送出
+            recordSubmission();
+
+            // 6. 顯示感謝訊息
+            showVoiceWarning('感謝您的建議！',
+                source === 'search' ? '我們會盡快新增相關內容' : '您的意見將幫助我們改進 TravelTalk');
+
+            return true;
+        }
+
+        // 從搜尋建議（點擊按鈕時）
+        function suggestFromSearch(keyword) {
+            processSuggestion(keyword, 'search');
+        }
+
+        // 手動送出建議（從 modal）
+        function submitSuggestion() {
+            const input = document.getElementById('suggestion-input');
+            const warningDiv = document.getElementById('suggestion-warning');
+            const text = input.value.trim();
+
+            // 隱藏之前的警告
+            warningDiv.classList.add('hidden');
+
+            // 調用統一邏輯
+            const success = processSuggestion(text, 'manual');
+
+            // 如果成功送出，清空輸入框
+            if (success) {
+                input.value = '';
+                warningDiv.classList.add('hidden');
+            }
         }
     </script>
 </body>
