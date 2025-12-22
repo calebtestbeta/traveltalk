@@ -524,10 +524,11 @@
         ];
 
         let currentCategory = 'all';
-        let activePhraseData = null; 
+        let activePhraseData = null;
         let originalDynamicItem = null;
         let searchQuery = '';
-        
+        let lastSearchTime = 0; // 用於搜尋 Rate Limiting
+
         // 讀取我的最愛
         let favorites = JSON.parse(localStorage.getItem('traveltalk_favorites')) || [];
 
@@ -536,12 +537,78 @@
             renderList();
         });
 
+        // === 安全性函數 ===
+
+        // HTML Escaping - 防止 XSS 攻擊
+        function escapeHtml(unsafe) {
+            if (typeof unsafe !== 'string') return '';
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // 驗證搜尋輸入
+        function validateSearchInput(text) {
+            // 1. 長度限制
+            if (text.length > 100) {
+                return { valid: false, message: '搜尋關鍵字過長' };
+            }
+
+            // 2. 阻擋明顯的 HTML 標籤
+            if (/<[^>]*>/g.test(text)) {
+                return { valid: false, message: '搜尋內容包含非法字符' };
+            }
+
+            // 3. 阻擋 JavaScript 關鍵字
+            const dangerousPatterns = [
+                /javascript:/i,
+                /on\w+\s*=/i,  // onload=, onclick=, etc.
+                /<script/i,
+                /<iframe/i
+            ];
+
+            for (const pattern of dangerousPatterns) {
+                if (pattern.test(text)) {
+                    return { valid: false, message: '搜尋內容包含非法字符' };
+                }
+            }
+
+            return { valid: true };
+        }
+
         // 搜尋功能
         function handleSearch() {
+            // Rate Limiting：防止快速連續搜尋
+            const now = Date.now();
+            const SEARCH_COOLDOWN = 500; // 500ms 冷卻時間
+
+            if (now - lastSearchTime < SEARCH_COOLDOWN) {
+                return; // 靜默忽略，不顯示錯誤
+            }
+            lastSearchTime = now;
+
             const input = document.getElementById('search-input');
             const clearBtn = document.getElementById('clear-search');
-            searchQuery = input.value.trim().toLowerCase();
-            
+            const rawText = input.value.trim();
+
+            // 驗證輸入
+            if (rawText) {
+                const validation = validateSearchInput(rawText);
+                if (!validation.valid) {
+                    showVoiceWarning('搜尋失敗', validation.message);
+                    input.value = '';
+                    searchQuery = '';
+                    clearBtn.classList.add('hidden');
+                    renderList();
+                    return;
+                }
+            }
+
+            searchQuery = rawText.toLowerCase();
+
             // 顯示/隱藏清除按鈕
             if (searchQuery) {
                 clearBtn.classList.remove('hidden');
@@ -646,30 +713,55 @@
             });
 
             if (items.length === 0) {
-                let emptyMsg = '';
+                // 清空列表
+                list.innerHTML = '';
+
                 if (currentCategory === 'favorites') {
-                    emptyMsg = `
-                        <div class="text-center text-gray-400 mt-20">
-                            <p>還沒有加入常用對話<br><span class="text-xs">點擊星星圖示即可加入</span></p>
-                        </div>
-                    `;
+                    // 收藏清單為空
+                    const emptyDiv = document.createElement('div');
+                    emptyDiv.className = 'text-center text-gray-400 mt-20';
+                    emptyDiv.innerHTML = '<p>還沒有加入常用對話<br><span class="text-xs">點擊星星圖示即可加入</span></p>';
+                    list.appendChild(emptyDiv);
                 } else if (searchQuery) {
-                    // 搜尋失敗 - 顯示建議回報
-                    emptyMsg = `
-                        <div class="text-center mt-20">
-                            <div class="text-gray-400 mb-4">
-                                <i class="fa-solid fa-magnifying-glass text-4xl mb-2"></i>
-                                <p class="text-lg">找不到「<span class="text-gray-600 font-bold">${searchQuery}</span>」相關內容 😢</p>
-                            </div>
-                            <button onclick="suggestFromSearch('${searchQuery}')" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold shadow-md hover:bg-blue-700">
-                                <i class="fa-solid fa-lightbulb"></i> 建議新增這個場景
-                            </button>
-                        </div>
-                    `;
+                    // 搜尋失敗 - 使用 DOM API 安全建立元素
+                    const container = document.createElement('div');
+                    container.className = 'text-center mt-20';
+
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'text-gray-400 mb-4';
+
+                    const icon = document.createElement('i');
+                    icon.className = 'fa-solid fa-magnifying-glass text-4xl mb-2';
+                    messageDiv.appendChild(icon);
+
+                    const p = document.createElement('p');
+                    p.className = 'text-lg';
+                    p.textContent = '找不到「';
+
+                    const searchSpan = document.createElement('span');
+                    searchSpan.className = 'text-gray-600 font-bold';
+                    searchSpan.textContent = searchQuery; // 使用 textContent，安全
+
+                    p.appendChild(searchSpan);
+                    p.appendChild(document.createTextNode('」相關內容 😢'));
+                    messageDiv.appendChild(p);
+
+                    const button = document.createElement('button');
+                    button.className = 'bg-blue-600 text-white px-6 py-3 rounded-lg font-bold shadow-md hover:bg-blue-700';
+                    button.innerHTML = '<i class="fa-solid fa-lightbulb"></i> 建議新增這個場景';
+                    // 使用事件綁定而非 onclick 字串，安全
+                    button.addEventListener('click', () => suggestFromSearch(searchQuery));
+
+                    container.appendChild(messageDiv);
+                    container.appendChild(button);
+                    list.appendChild(container);
                 } else {
-                    emptyMsg = `<div class="text-center text-gray-400 mt-20"><p>沒有找到相關內容</p></div>`;
+                    // 一般空白狀態
+                    const emptyDiv = document.createElement('div');
+                    emptyDiv.className = 'text-center text-gray-400 mt-20';
+                    emptyDiv.innerHTML = '<p>沒有找到相關內容</p>';
+                    list.appendChild(emptyDiv);
                 }
-                list.innerHTML = emptyMsg;
                 return;
             }
 
@@ -1131,6 +1223,21 @@
             // 5. 過濾純數字
             if (/^\d+$/.test(text)) {
                 return { valid: false, message: '請輸入有意義的建議' };
+            }
+
+            // 6. 阻擋 HTML 標籤（安全性）
+            if (/<[^>]*>/g.test(text)) {
+                return { valid: false, message: '請勿輸入 HTML 標籤' };
+            }
+
+            // 7. 阻擋 JavaScript 關鍵字（安全性）
+            if (/javascript:/i.test(text) || /on\w+\s*=/i.test(text)) {
+                return { valid: false, message: '建議內容包含非法字符' };
+            }
+
+            // 8. 阻擋 URL（防止釣魚連結）
+            if (/(https?:\/\/|www\.)/i.test(text)) {
+                return { valid: false, message: '請勿在建議中包含網址' };
             }
 
             return { valid: true };
