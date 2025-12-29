@@ -4,9 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TravelTalk - 五國語言全功能版 (搜尋+收藏)</title>
-    
+
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2563eb">
+
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180x180.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="/icons/apple-touch-icon-167x167.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon-180x180.png">
+
+    <!-- iOS Safari 配置 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TravelTalk">
+
+    <!-- Microsoft Tiles -->
+    <meta name="msapplication-TileImage" content="/icons/icon-144x144.png">
+    <meta name="msapplication-TileColor" content="#2563eb">
+    <meta name="msapplication-config" content="/browserconfig.xml">
+
+    <!-- SEO 增強 -->
+    <meta name="description" content="TravelTalk 是專為台灣旅客設計的多語言翻譯應用，提供中文、英文、日文、韓文、泰文五國語言即時翻譯，支援離線使用和語音播放">
+    <meta name="keywords" content="旅遊翻譯,多語言,中英日韓泰,離線翻譯,語音播放,TravelTalk">
+
     <!-- Favicon -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 512 512%22><path fill=%22%232563eb%22 d=%22M512 240c0 114.9-114.6 208-256 208c-37.1 0-72.3-6.4-104.1-17.9c-11.9 8.7-31.3 20.6-54.3 30.6C73.6 471.1 44.7 480 16 480c-6.5 0-12.3-3.9-14.8-9.9c-2.5-6-1.1-12.8 3.4-17.4l0 0 0 0c31.4-31.6 63.9-61.1 63.9-61.1c-16-16.7-28.8-35.3-37.3-55.3C10.7 308.1 0 274.9 0 240C0 125.1 114.6 32 256 32s256 93.1 256 208z%22/></svg>">
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
+    <link rel="shortcut icon" href="/icons/favicon.ico">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -17,13 +43,20 @@
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Google Analytics 4 -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-K4KQF3YMT0"></script>
+    <!-- Google Analytics 4 (延遲載入) -->
     <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-K4KQF3YMT0');
+        // 延遲載入 GA，避免阻塞渲染
+        window.addEventListener('load', () => {
+            const script = document.createElement('script');
+            script.async = true;
+            script.src = 'https://www.googletagmanager.com/gtag/js?id=G-K4KQF3YMT0';
+            document.head.appendChild(script);
+
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-K4KQF3YMT0');
+        });
     </script>
 
     <style>
@@ -1469,6 +1502,85 @@
                 warningDiv.classList.add('hidden');
             }
         }
+
+        // ===== Service Worker 註冊 =====
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        console.log('✅ Service Worker registered:', registration.scope);
+
+                        // 檢查更新
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            console.log('🔄 New Service Worker installing...');
+
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // 有新版本可用
+                                    showUpdateNotification();
+                                }
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        console.error('❌ Service Worker registration failed:', error);
+                    });
+            });
+        }
+
+        // 顯示更新通知
+        function showUpdateNotification() {
+            showVoiceWarning('新版本可用', '請重新整理頁面以更新應用', 5000);
+        }
+
+        // ===== 網路狀態檢測 =====
+        let isOnline = navigator.onLine;
+
+        function updateOnlineStatus() {
+            isOnline = navigator.onLine;
+            const offlineIndicator = document.getElementById('offline-indicator');
+
+            if (!isOnline && !offlineIndicator) {
+                // 顯示離線指示器
+                const indicator = document.createElement('div');
+                indicator.id = 'offline-indicator';
+                indicator.style.cssText = `
+                    position: fixed;
+                    bottom: 80px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: #f59e0b;
+                    color: white;
+                    padding: 8px 16px;
+                    border-radius: 20px;
+                    font-size: 12px;
+                    z-index: 100;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                `;
+                indicator.innerHTML = '<i class="fa-solid fa-wifi-slash"></i><span>離線模式</span>';
+                document.body.appendChild(indicator);
+            } else if (isOnline && offlineIndicator) {
+                // 移除離線指示器
+                offlineIndicator.remove();
+            }
+        }
+
+        window.addEventListener('online', () => {
+            updateOnlineStatus();
+            showVoiceWarning('已恢復網路連線', '', 2000);
+        });
+
+        window.addEventListener('offline', () => {
+            updateOnlineStatus();
+            showVoiceWarning('目前處於離線模式', '核心翻譯功能仍可使用', 3000);
+        });
+
+        // 初始化
+        updateOnlineStatus();
     </script>
 </body>
 </html>
