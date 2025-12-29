@@ -279,16 +279,20 @@
             { id: 'int-google-trans', category: 'interaction', zh: '請用Google翻譯', en: 'Please use Google Translate.', jp: 'Google翻訳を使ってください。', kr: '구글 번역기를 사용해주세요.', th: 'กรุณาใช้ Google Translate' },
 
             // --- 餐廳/飲食 (Dining) ---
-            { 
+            {
                 id: 'dine-people',
-                category: 'dining', 
+                category: 'dining',
                 isDynamic: true,
-                title: '我們有...位 (人數)', 
+                title: '我們有...位 (人數)',
                 options: [
                     { label: '1位', zh: '一位', en: 'Table for one.', jp: '1名です。', kr: '한 명입니다.', th: '1 ท่าน' },
                     { label: '2位', zh: '兩位', en: 'Table for two.', jp: '2名です。', kr: '두 명입니다.', th: '2 ท่าน' },
                     { label: '3位', zh: '三位', en: 'Table for three.', jp: '3名です。', kr: '세 명입니다.', th: '3 ท่าน' },
-                    { label: '4位', zh: '四位', en: 'Table for four.', jp: '4名です。', kr: '네 명입니다.', th: '4 ท่าน' }
+                    { label: '4位', zh: '四位', en: 'Table for four.', jp: '4名です。', kr: '네 명입니다.', th: '4 ท่าน' },
+                    { label: '5位', zh: '五位', en: 'Table for five.', jp: '5名です。', kr: '다섯 명입니다.', th: '5 ท่าน' },
+                    { label: '6位', zh: '六位', en: 'Table for six.', jp: '6名です。', kr: '여섯 명입니다.', th: '6 ท่าน' },
+                    { label: '7位', zh: '七位', en: 'Table for seven.', jp: '7名です。', kr: '일곱 명입니다.', th: '7 ท่าน' },
+                    { label: '8位', zh: '八位', en: 'Table for eight.', jp: '8名です。', kr: '여덟 명입니다.', th: '8 ท่าน' }
                 ]
             },
             { id: 'dine-menu', category: 'dining', zh: '請給我菜單', en: 'Menu, please.', jp: 'メニューをください。', kr: '메뉴판 주세요.', th: 'ขอเมนูหน่อย' },
@@ -399,11 +403,27 @@
             { id: 'emg-hospital', category: 'emergency', zh: '醫院在哪裡？', en: 'Where is the hospital?', jp: '病院はどこですか？', kr: '병원은 어디예요?', th: 'โรงพยาบาลอยู่ที่ไหน?' },
 
             // --- 基礎 (Basic) ---
-            { 
-                id: 'basic-nationality',
-                category: 'basic', 
+            // 自我介紹國籍
+            {
+                id: 'int-i-am-from',
+                category: 'interaction',
                 isDynamic: true,
-                title: '你是...人嗎？(國籍)', 
+                title: '我是...人',
+                options: [
+                    { label: '台灣', zh: '我是台灣人', en: "I'm from Taiwan.", jp: '私は台湾人です。', kr: '저는 대만 사람입니다.', th: 'ฉันมาจากไต้หวัน' },
+                    { label: '美國', zh: '我是美國人', en: "I'm American.", jp: '私はアメリカ人です。', kr: '저는 미국 사람입니다.', th: 'ฉันมาจากอเมริกา' },
+                    { label: '日本', zh: '我是日本人', en: "I'm Japanese.", jp: '私は日本人です。', kr: '저는 일본 사람입니다.', th: 'ฉันเป็นคนญี่ปุ่น' },
+                    { label: '韓國', zh: '我是韓國人', en: "I'm Korean.", jp: '私は韓国人です。', kr: '저는 한국 사람입니다.', th: 'ฉันเป็นคนเกาหลี' },
+                    { label: '香港', zh: '我是香港人', en: "I'm from Hong Kong.", jp: '私は香港人です。', kr: '저는 홍콩 사람입니다.', th: 'ฉันมาจากฮ่องกง' },
+                    { label: '泰國', zh: '我是泰國人', en: "I'm Thai.", jp: '私はタイ人です。', kr: '저는 태국 사람입니다.', th: 'ฉันเป็นคนไทย' }
+                ]
+            },
+            // 詢問對方國籍
+            {
+                id: 'int-nationality',
+                category: 'interaction',
+                isDynamic: true,
+                title: '你是...人嗎？',
                 options: [
                     { label: '美國', zh: '你是美國人嗎？', en: 'Are you from the US?', jp: 'アメリカの方ですか？', kr: '미국 분이신가요?', th: 'คุณมาจากอเมริกาใช่ไหม?' },
                     { label: '日本', zh: '你是日本人嗎？', en: 'Are you Japanese?', jp: '日本人ですか？', kr: '일본 분이신가요?', th: 'คุณเป็นคนญี่ปุ่นใช่ไหม?' },
@@ -413,24 +433,25 @@
                     { label: '泰國', zh: '你是泰國人嗎？', en: 'Are you Thai?', jp: 'タイの方ですか？', kr: '태국 분이신가요?', th: 'คุณเป็นคนไทยใช่ไหม?' }
                 ]
             },
-            { 
-                id: 'basic-greeting',
-                category: 'basic', 
+            {
+                id: 'int-greeting',
+                category: 'interaction',
                 isDynamic: true,
-                title: '早安 / 午安 / 晚安', 
+                title: '早安 / 午安 / 晚安',
                 options: [
                     { label: '早安', zh: '早安', en: 'Good morning.', jp: 'おはようございます。', kr: '좋은 아침입니다.', th: 'สวัสดีตอนเช้า' },
                     { label: '午安', zh: '你好 / 午安', en: 'Hello / Good afternoon.', jp: 'こんにちは。', kr: '안녕하세요.', th: 'สวัสดี' },
                     { label: '晚安', zh: '晚安', en: 'Good evening.', jp: 'こんばんは。', kr: '좋은 저녁입니다.', th: 'สวัสดีตอนเย็น' }
                 ]
             },
-            { id: 'basic-wait', category: 'basic', zh: '請稍等一下', en: 'Please wait a moment.', jp: '少々お待ちください。', kr: '잠시만 기다려 주세요.', th: 'กรุณารอสักครู่' },
-            { id: 'basic-thank-you', category: 'basic', zh: '謝謝', en: 'Thank you.', jp: 'ありがとうございます。', kr: '감사합니다.', th: 'ขอบคุณ' },
-            { id: 'basic-excuse-me', category: 'basic', zh: '不好意思', en: 'Excuse me.', jp: 'すみません。', kr: '실례합니다.', th: 'ขอโทษนะ / ขอทางหน่อย' },
+            { id: 'int-wait', category: 'interaction', zh: '請稍等一下', en: 'Please wait a moment.', jp: '少々お待ちください。', kr: '잠시만 기다려 주세요.', th: 'กรุณารอสักครู่' },
+            { id: 'int-thank-you', category: 'interaction', zh: '謝謝', en: 'Thank you.', jp: 'ありがとうございます。', kr: '감사합니다.', th: 'ขอบคุณ' },
+            { id: 'int-excuse-me', category: 'interaction', zh: '不好意思', en: 'Excuse me.', jp: 'すみません。', kr: '실례합니다.', th: 'ขอโทษนะ / ขอทางหน่อย' },
 
             // --- 交通 (Transport) ---
             { id: 'trans-hotel', category: 'transport', zh: '這家飯店怎麼去？', en: 'How do I get to this hotel?', jp: 'このホテルへはどう行きますか？', kr: '이 호텔은 어떻게 가나요?', th: 'โรงแรมนี้ไปทางไหน?' },
             { id: 'trans-subway', category: 'transport', zh: '地鐵站在哪裡？', en: 'Where is the subway station?', jp: '地下鉄の駅はどこですか？', kr: '지하철역은 어디예요?', th: 'สถานีรถไฟใต้ดินอยู่ที่ไหน?' },
+            { id: 'trans-bus-stop', category: 'transport', zh: '巴士站在哪裡？', en: 'Where is the bus stop?', jp: 'バス停はどこですか？', kr: '버스 정류장은 어디예요?', th: 'ป้ายรถเมล์อยู่ที่ไหน?' },
             { id: 'trans-take-me', category: 'transport', zh: '請載我去這裡', en: 'Take me here, please.', jp: 'ここへ行ってください。', kr: '여기로 가주세요.', th: 'ช่วยไปส่งที่นี่หน่อย' },
 
             // 大眾運輸
@@ -550,7 +571,6 @@
             { id: 'dining', name: '餐廳', icon: 'fa-utensils' },
             { id: 'shopping', name: '購物', icon: 'fa-cart-shopping' },
             { id: 'emergency', name: '緊急', icon: 'fa-truck-medical' },
-            { id: 'basic', name: '基礎', icon: 'fa-user' },
             { id: 'transport', name: '交通', icon: 'fa-train-subway' },
             { id: 'hotel', name: '住宿', icon: 'fa-hotel' },
             { id: 'numbers', name: '數字', icon: 'fa-hashtag' }
