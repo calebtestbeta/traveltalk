@@ -120,9 +120,9 @@
     </footer>
 
     <!-- MAIN MODAL -->
-    <div id="translation-modal" onclick="if(event.target === this) closeModal()" class="fixed inset-0 z-50 hidden bg-black/95 flex-col justify-start items-center p-6 text-white transition-all duration-300 backdrop-blur-sm pt-8 overflow-y-auto cursor-pointer">
-        
-        <button onclick="closeModal()" class="fixed top-6 right-6 w-10 h-10 flex items-center justify-center bg-gray-700/80 rounded-full text-white hover:bg-gray-600 z-[60] shadow-lg border border-gray-500 backdrop-blur-md">
+    <div id="translation-modal" onclick="if(event.target === this) closeModal()" class="fixed inset-0 z-50 hidden bg-black/70 flex-col justify-start items-center p-6 text-white transition-all duration-300 backdrop-blur-sm pt-8 overflow-y-auto cursor-pointer">
+
+        <button onclick="closeModal()" class="fixed top-4 right-4 w-10 h-10 flex items-center justify-center bg-gray-700/80 rounded-full text-white hover:bg-gray-600 z-[60] shadow-lg border border-gray-500 backdrop-blur-md">
             <i class="fa-solid fa-xmark text-xl"></i>
         </button>
 
@@ -180,6 +180,34 @@
                 <li><i class="fa-solid fa-magnifying-glass text-gray-400"></i> 上方搜尋框可快速查找對話。</li>
                 <li>支援中、英、日、韓、泰五語發音。</li>
             </ul>
+
+            <!-- PWA 安裝教學區塊 -->
+            <div id="pwa-install-section" class="bg-green-50 border-l-4 border-green-500 p-4 mt-3 rounded-xl">
+                <p class="text-green-800 text-xs font-bold mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-mobile-screen-button text-green-600"></i>
+                    安裝到主畫面
+                </p>
+
+                <div id="pwa-ios-section" class="mb-2">
+                    <p class="text-green-700 text-xs font-semibold mb-1">iPhone / iPad:</p>
+                    <p class="text-green-600 text-[11px] leading-relaxed">
+                        點選瀏覽器下方的「分享」按鈕，選擇「加入主畫面」即可快速開啟應用。支援離線使用！
+                    </p>
+                </div>
+
+                <div id="pwa-android-section">
+                    <p class="text-green-700 text-xs font-semibold mb-1">Android:</p>
+                    <p class="text-green-600 text-[11px] leading-relaxed">
+                        瀏覽器會自動提示安裝。點擊「安裝」將應用新增至主畫面，隨時可用。
+                    </p>
+                </div>
+
+                <p class="text-green-500 text-[10px] mt-2 flex items-center gap-1">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    離線時也能翻譯，更省流量！
+                </p>
+            </div>
+
             <div class="bg-orange-50 border-l-4 border-orange-400 p-3 mt-3 rounded">
                 <p class="text-orange-800 text-xs font-bold mb-2">📱 語音包下載提醒</p>
                 <p class="text-orange-700 text-xs">• iPhone: 設定 > 輔助使用 > 語音內容 > 聲音</p>
