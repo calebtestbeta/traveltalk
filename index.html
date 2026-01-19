@@ -83,7 +83,8 @@
             display: none;
         }
 
-        @media (orientation: landscape) {
+        /* 只在手機橫屏時觸發（高度小於600px且為橫向） */
+        @media (orientation: landscape) and (max-height: 600px) {
             .portrait-view {
                 display: none !important;
             }
@@ -1148,28 +1149,44 @@
         let landscapeMediaQuery = null;
 
         function initOrientationDetection() {
-            landscapeMediaQuery = window.matchMedia('(orientation: landscape)');
+            try {
+                // 只在手機橫屏時觸發（高度小於600px且為橫向）
+                landscapeMediaQuery = window.matchMedia('(orientation: landscape) and (max-height: 600px)');
 
-            function handleOrientationChange(e) {
-                isLandscape = e.matches;
+                function handleOrientationChange(e) {
+                    isLandscape = e.matches;
+                    updateLandscapeView();
+                }
+
+                // 監聽方向變化 (使用新的 API)
+                if (landscapeMediaQuery.addEventListener) {
+                    landscapeMediaQuery.addEventListener('change', handleOrientationChange);
+                } else if (landscapeMediaQuery.addListener) {
+                    // Fallback for older browsers
+                    landscapeMediaQuery.addListener(handleOrientationChange);
+                }
+
+                // 初始檢查
+                isLandscape = landscapeMediaQuery.matches;
                 updateLandscapeView();
+            } catch (error) {
+                console.error('Orientation detection error:', error);
+                // 如果方向偵測失敗，確保不影響其他功能
+                isLandscape = false;
             }
-
-            // 監聽方向變化
-            landscapeMediaQuery.addListener(handleOrientationChange);
-
-            // 初始檢查
-            isLandscape = landscapeMediaQuery.matches;
-            updateLandscapeView();
         }
 
         function updateLandscapeView() {
-            if (isLandscape && activePhraseData) {
-                // 水平模式且有選擇的對話
-                showLandscapeContent();
-            } else if (isLandscape) {
-                // 水平模式但未選擇對話
-                showLandscapeEmpty();
+            try {
+                if (isLandscape && activePhraseData) {
+                    // 水平模式且有選擇的對話
+                    showLandscapeContent();
+                } else if (isLandscape) {
+                    // 水平模式但未選擇對話
+                    showLandscapeEmpty();
+                }
+            } catch (error) {
+                console.error('Update landscape view error:', error);
             }
         }
 
@@ -1177,19 +1194,27 @@
             const content = document.getElementById('landscape-content');
             const empty = document.getElementById('landscape-empty');
 
+            if (!content || !empty || !activePhraseData) return;
+
             content.classList.remove('hidden');
             empty.classList.add('hidden');
 
             // 更新文字內容
-            document.getElementById('landscape-zh').textContent = activePhraseData.zh;
-            document.getElementById('landscape-en').textContent = activePhraseData.en;
-            document.getElementById('landscape-jp').textContent = activePhraseData.jp;
-            document.getElementById('landscape-kr').textContent = activePhraseData.kr;
-            document.getElementById('landscape-th').textContent = activePhraseData.th || '';
+            const zhEl = document.getElementById('landscape-zh');
+            const enEl = document.getElementById('landscape-en');
+            const jpEl = document.getElementById('landscape-jp');
+            const krEl = document.getElementById('landscape-kr');
+            const thEl = document.getElementById('landscape-th');
+
+            if (zhEl) zhEl.textContent = activePhraseData.zh || '';
+            if (enEl) enEl.textContent = activePhraseData.en || '';
+            if (jpEl) jpEl.textContent = activePhraseData.jp || '';
+            if (krEl) krEl.textContent = activePhraseData.kr || '';
+            if (thEl) thEl.textContent = activePhraseData.th || '';
 
             // 處理動態選項
             const switcher = document.getElementById('landscape-switcher');
-            if (originalDynamicItem) {
+            if (switcher && originalDynamicItem) {
                 switcher.classList.remove('hidden');
                 switcher.innerHTML = originalDynamicItem.options.map((opt, idx) => `
                     <button onclick="switchDynamicOptionLandscape(${idx})"
@@ -1197,7 +1222,7 @@
                         ${opt.label}
                     </button>
                 `).join('');
-            } else {
+            } else if (switcher) {
                 switcher.classList.add('hidden');
             }
         }
@@ -1205,6 +1230,8 @@
         function showLandscapeEmpty() {
             const content = document.getElementById('landscape-content');
             const empty = document.getElementById('landscape-empty');
+
+            if (!content || !empty) return;
 
             content.classList.add('hidden');
             empty.classList.remove('hidden');
