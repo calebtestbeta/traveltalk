@@ -77,9 +77,23 @@
             color: #9ca3af;
             border-color: #374151;
         }
+
+        /* Landscape View Styles */
+        .landscape-view {
+            display: none;
+        }
+
+        @media (orientation: landscape) {
+            .portrait-view {
+                display: none !important;
+            }
+            .landscape-view {
+                display: flex !important;
+            }
+        }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden max-w-md mx-auto bg-white shadow-xl relative">
+<body class="portrait-view h-screen flex flex-col overflow-hidden max-w-md mx-auto bg-white shadow-xl relative">
 
     <!-- Header -->
     <header class="bg-blue-600 text-white p-4 pb-2 flex justify-between items-center shadow-md z-20 shrink-0">
@@ -90,7 +104,12 @@
                 <p class="text-[10px] text-blue-100 opacity-90">台灣視角出發 • 中英日韓泰交流助手</p>
             </div>
         </div>
-        <button onclick="showInfo()" class="text-white hover:text-blue-200"><i class="fa-solid fa-circle-info text-xl"></i></button>
+        <div class="flex items-center gap-2">
+            <button onclick="showVoiceSettings()" class="text-white hover:text-blue-200">
+                <i class="fa-solid fa-gear text-xl"></i>
+            </button>
+            <button onclick="showInfo()" class="text-white hover:text-blue-200"><i class="fa-solid fa-circle-info text-xl"></i></button>
+        </div>
     </header>
 
     <!-- Search Bar -->
@@ -118,6 +137,61 @@
     <footer class="bg-gray-100 text-gray-500 text-xs text-center p-2 border-t shrink-0">
         <p>點擊卡片開啟對話 • 點擊 <i class="fa-regular fa-star text-yellow-500"></i> 加入常用</p>
     </footer>
+
+    <!-- Landscape View - 水平螢幕專用 -->
+    <div id="landscape-view" class="landscape-view fixed inset-0 bg-black/70 backdrop-blur-sm z-40 flex-col items-center justify-center p-6">
+        <div class="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
+            <!-- 空白狀態 -->
+            <div id="landscape-empty" class="text-center py-12">
+                <i class="fa-solid fa-mobile-screen-button text-6xl text-gray-300 mb-4"></i>
+                <p class="text-gray-500 text-lg">請從列表選擇對話</p>
+                <p class="text-gray-400 text-sm mt-2">旋轉回垂直螢幕以瀏覽列表</p>
+            </div>
+
+            <!-- 對話內容 -->
+            <div id="landscape-content" class="hidden">
+                <!-- 關閉按鈕 -->
+                <button onclick="clearLandscapeView()" class="float-right text-gray-400 hover:text-gray-600">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+
+                <!-- 動態選項切換器 -->
+                <div id="landscape-switcher" class="hidden grid grid-cols-4 gap-2 mb-4"></div>
+
+                <!-- 中文標題 -->
+                <div class="border-b border-gray-200 pb-3 mb-4">
+                    <h2 id="landscape-zh" class="text-2xl font-bold text-gray-800"></h2>
+                </div>
+
+                <!-- 五語言卡片（2x2 網格） -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div onclick="playAudio('en')" class="bg-gray-800 p-4 rounded-xl cursor-pointer hover:bg-gray-700 border border-gray-700 transition">
+                        <span class="text-xs text-green-400 font-bold">ENGLISH</span>
+                        <p id="landscape-en" class="text-lg font-bold text-white mt-2"></p>
+                        <i class="fa-solid fa-volume-high text-green-400 mt-2"></i>
+                    </div>
+
+                    <div onclick="playAudio('ja')" class="bg-gray-800 p-4 rounded-xl cursor-pointer hover:bg-gray-700 border border-gray-700 transition">
+                        <span class="text-xs text-pink-400 font-bold">日本語</span>
+                        <p id="landscape-jp" class="text-lg font-bold text-white mt-2 font-jp"></p>
+                        <i class="fa-solid fa-volume-high text-pink-400 mt-2"></i>
+                    </div>
+
+                    <div onclick="playAudio('ko')" class="bg-gray-800 p-4 rounded-xl cursor-pointer hover:bg-gray-700 border border-gray-700 transition">
+                        <span class="text-xs text-yellow-400 font-bold">한국어</span>
+                        <p id="landscape-kr" class="text-lg font-bold text-white mt-2 font-kr"></p>
+                        <i class="fa-solid fa-volume-high text-yellow-400 mt-2"></i>
+                    </div>
+
+                    <div onclick="playAudio('th')" class="bg-gray-800 p-4 rounded-xl cursor-pointer hover:bg-gray-700 border border-gray-700 transition">
+                        <span class="text-xs text-purple-400 font-bold">ภาษาไทย</span>
+                        <p id="landscape-th" class="text-lg font-bold text-white mt-2 font-th"></p>
+                        <i class="fa-solid fa-volume-high text-purple-400 mt-2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- MAIN MODAL -->
     <div id="translation-modal" onclick="if(event.target === this) closeModal()" class="fixed inset-0 z-50 hidden bg-black/70 flex-col justify-start items-center p-6 text-white transition-all duration-300 backdrop-blur-sm pt-8 overflow-y-auto cursor-pointer">
@@ -241,9 +315,40 @@
             </div>
 
             <button onclick="document.getElementById('info-modal').classList.add('hidden')" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold mt-4">了解</button>
-            
+
             <!-- Version Number -->
             <p class="text-gray-300 text-[10px] text-center mt-3">Ver 1.0.0</p>
+        </div>
+    </div>
+
+    <!-- Voice Settings Modal -->
+    <div id="voice-settings-modal" class="fixed inset-0 z-50 hidden bg-black/50 flex justify-center items-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-xl p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">
+                    <i class="fa-solid fa-microphone-lines text-blue-600 mr-2"></i>
+                    語音設定
+                </h3>
+                <button onclick="closeVoiceSettings()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <p class="text-sm text-gray-600 mb-4">選擇您喜歡的語音，點擊測試按鈕可試聽</p>
+
+            <!-- 語音選項容器 -->
+            <div id="voice-options-container" class="space-y-4">
+                <!-- 動態生成 -->
+            </div>
+
+            <div class="mt-6 flex justify-end gap-2">
+                <button onclick="resetVoiceSettings()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                    重置為預設
+                </button>
+                <button onclick="closeVoiceSettings()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    完成
+                </button>
+            </div>
         </div>
     </div>
 
@@ -613,7 +718,11 @@
         // 讀取我的最愛
         let favorites = JSON.parse(localStorage.getItem('traveltalk_favorites')) || [];
 
+        // 讀取語音偏好
+        let voicePreferences = JSON.parse(localStorage.getItem('traveltalk_voice_preferences')) || {};
+
         document.addEventListener('DOMContentLoaded', () => {
+            initOrientationDetection();
             renderCategories();
             renderList();
         });
@@ -950,9 +1059,25 @@
             const item = phrases.find(p => p.id === id);
             if (!item) return;
 
+            // 更新 activePhraseData 供 landscape view 使用
+            if (item.isDynamic) {
+                originalDynamicItem = item;
+                activePhraseData = item.options[0];
+            } else {
+                originalDynamicItem = null;
+                activePhraseData = item;
+            }
+
+            // 如果是水平模式，更新 landscape view 而不是打開 modal
+            if (isLandscape) {
+                updateLandscapeView();
+                return;
+            }
+
+            // 垂直模式：打開 Modal（現有邏輯）
             const modal = document.getElementById('translation-modal');
             const switcher = document.getElementById('modal-switcher');
-            
+
             modal.classList.remove('hidden');
             modal.classList.add('flex');
 
@@ -1017,7 +1142,104 @@
             modal.classList.remove('flex');
             window.speechSynthesis.cancel();
         }
-        
+
+        // === 螢幕方向處理 ===
+        let isLandscape = false;
+        let landscapeMediaQuery = null;
+
+        function initOrientationDetection() {
+            landscapeMediaQuery = window.matchMedia('(orientation: landscape)');
+
+            function handleOrientationChange(e) {
+                isLandscape = e.matches;
+                updateLandscapeView();
+            }
+
+            // 監聽方向變化
+            landscapeMediaQuery.addListener(handleOrientationChange);
+
+            // 初始檢查
+            isLandscape = landscapeMediaQuery.matches;
+            updateLandscapeView();
+        }
+
+        function updateLandscapeView() {
+            if (isLandscape && activePhraseData) {
+                // 水平模式且有選擇的對話
+                showLandscapeContent();
+            } else if (isLandscape) {
+                // 水平模式但未選擇對話
+                showLandscapeEmpty();
+            }
+        }
+
+        function showLandscapeContent() {
+            const content = document.getElementById('landscape-content');
+            const empty = document.getElementById('landscape-empty');
+
+            content.classList.remove('hidden');
+            empty.classList.add('hidden');
+
+            // 更新文字內容
+            document.getElementById('landscape-zh').textContent = activePhraseData.zh;
+            document.getElementById('landscape-en').textContent = activePhraseData.en;
+            document.getElementById('landscape-jp').textContent = activePhraseData.jp;
+            document.getElementById('landscape-kr').textContent = activePhraseData.kr;
+            document.getElementById('landscape-th').textContent = activePhraseData.th || '';
+
+            // 處理動態選項
+            const switcher = document.getElementById('landscape-switcher');
+            if (originalDynamicItem) {
+                switcher.classList.remove('hidden');
+                switcher.innerHTML = originalDynamicItem.options.map((opt, idx) => `
+                    <button onclick="switchDynamicOptionLandscape(${idx})"
+                            class="py-2 text-xs font-bold rounded border transition ${idx === 0 ? 'tab-active' : 'tab-inactive'} truncate">
+                        ${opt.label}
+                    </button>
+                `).join('');
+            } else {
+                switcher.classList.add('hidden');
+            }
+        }
+
+        function showLandscapeEmpty() {
+            const content = document.getElementById('landscape-content');
+            const empty = document.getElementById('landscape-empty');
+
+            content.classList.add('hidden');
+            empty.classList.remove('hidden');
+        }
+
+        function clearLandscapeView() {
+            activePhraseData = null;
+            originalDynamicItem = null;
+            showLandscapeEmpty();
+        }
+
+        function switchDynamicOptionLandscape(subIndex) {
+            if (!originalDynamicItem) return;
+
+            // 更新按鈕狀態
+            const buttons = document.getElementById('landscape-switcher').querySelectorAll('button');
+            buttons.forEach((btn, idx) => {
+                if (idx === subIndex) {
+                    btn.classList.add('tab-active');
+                    btn.classList.remove('tab-inactive');
+                } else {
+                    btn.classList.remove('tab-active');
+                    btn.classList.add('tab-inactive');
+                }
+            });
+
+            // 更新數據和顯示
+            activePhraseData = originalDynamicItem.options[subIndex];
+            document.getElementById('landscape-zh').textContent = activePhraseData.zh;
+            document.getElementById('landscape-en').textContent = activePhraseData.en;
+            document.getElementById('landscape-jp').textContent = activePhraseData.jp;
+            document.getElementById('landscape-kr').textContent = activePhraseData.kr;
+            document.getElementById('landscape-th').textContent = activePhraseData.th || '';
+        }
+
         let voices = [];
         let voiceAvailability = {
             'en-US': false,
@@ -1132,15 +1354,25 @@
                 utterance.pitch = 1.0;
                 utterance.volume = 1.0;
 
-                // 嘗試找到最適合的語音（優先非中文語音，避免用中文讀外語）
-                const targetVoice = voices.find(v => {
-                    const vLang = v.lang.replace('_', '-');
-                    // 完全匹配優先
-                    if (vLang === langCode) return true;
-                    // 語言前綴匹配（如 en-US, en-GB）
-                    if (vLang.startsWith(langCode.split('-')[0])) return true;
-                    return false;
-                });
+                // 優先使用用戶選擇的語音
+                let targetVoice = null;
+
+                const preferredVoiceName = voicePreferences[langCode];
+                if (preferredVoiceName) {
+                    targetVoice = voices.find(v => v.name === preferredVoiceName);
+                }
+
+                // 如果沒有偏好設定或找不到，使用自動選擇
+                if (!targetVoice) {
+                    targetVoice = voices.find(v => {
+                        const vLang = v.lang.replace('_', '-');
+                        // 完全匹配優先
+                        if (vLang === langCode) return true;
+                        // 語言前綴匹配（如 en-US, en-GB）
+                        if (vLang.startsWith(langCode.split('-')[0])) return true;
+                        return false;
+                    });
+                }
 
                 if (targetVoice) {
                     utterance.voice = targetVoice;
@@ -1324,6 +1556,135 @@
         // Added showInfo function to fix ReferenceError
         function showInfo() {
             document.getElementById('info-modal').classList.remove('hidden');
+        }
+
+        // === 語音設定功能 ===
+
+        function showVoiceSettings() {
+            const modal = document.getElementById('voice-settings-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            // 確保語音已載入
+            if (voices.length === 0) {
+                voices = window.speechSynthesis.getVoices();
+                loadVoices();
+            }
+
+            renderVoiceOptions();
+        }
+
+        function closeVoiceSettings() {
+            const modal = document.getElementById('voice-settings-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            window.speechSynthesis.cancel();
+        }
+
+        function renderVoiceOptions() {
+            const container = document.getElementById('voice-options-container');
+
+            const languages = [
+                { code: 'en-US', name: '英文 (English)', prefix: 'en', color: 'green', testText: 'Hello, nice to meet you!' },
+                { code: 'ja-JP', name: '日文 (日本語)', prefix: 'ja', color: 'pink', testText: 'こんにちは、はじめまして！' },
+                { code: 'ko-KR', name: '韓文 (한국어)', prefix: 'ko', color: 'yellow', testText: '안녕하세요, 반갑습니다!' },
+                { code: 'th-TH', name: '泰文 (ไทย)', prefix: 'th', color: 'purple', testText: 'สวัสดีค่ะ ยินดีที่ได้รู้จัก!' }
+            ];
+
+            let html = '';
+
+            languages.forEach(lang => {
+                const availableVoices = voices.filter(v => {
+                    const vLang = v.lang.replace('_', '-');
+                    return vLang === lang.code || vLang.startsWith(lang.prefix);
+                });
+
+                if (availableVoices.length === 0) {
+                    // 無可用語音
+                    html += `
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <i class="fa-solid fa-circle-xmark text-red-500"></i>
+                                <h4 class="font-bold text-gray-800">${lang.name}</h4>
+                            </div>
+                            <p class="text-sm text-gray-500">未安裝語音包</p>
+                        </div>
+                    `;
+                } else {
+                    // 有可用語音
+                    const selectedVoice = voicePreferences[lang.code] || availableVoices[0].name;
+
+                    html += `
+                        <div class="border border-${lang.color}-200 rounded-lg p-4 bg-${lang.color}-50/30">
+                            <div class="flex items-center gap-2 mb-3">
+                                <i class="fa-solid fa-circle-check text-${lang.color}-500"></i>
+                                <h4 class="font-bold text-gray-800">${lang.name}</h4>
+                            </div>
+
+                            <select id="voice-select-${lang.code}"
+                                    onchange="saveVoicePreference('${lang.code}', this.value)"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-${lang.color}-500">
+                                ${availableVoices.map(v => `
+                                    <option value="${v.name}" ${v.name === selectedVoice ? 'selected' : ''}>
+                                        ${v.name} ${v.localService ? '(本機)' : '(線上)'}
+                                    </option>
+                                `).join('')}
+                            </select>
+
+                            <button onclick="testVoice('${lang.code}', '${lang.testText}')"
+                                    class="w-full px-3 py-2 bg-${lang.color}-600 text-white rounded-lg hover:bg-${lang.color}-700 transition text-sm flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-play"></i>
+                                測試語音
+                            </button>
+                        </div>
+                    `;
+                }
+            });
+
+            container.innerHTML = html;
+        }
+
+        function saveVoicePreference(langCode, voiceName) {
+            voicePreferences[langCode] = voiceName;
+            localStorage.setItem('traveltalk_voice_preferences', JSON.stringify(voicePreferences));
+        }
+
+        function testVoice(langCode, text) {
+            window.speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = langCode;
+            utterance.rate = 0.9;
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+
+            // 使用用戶選擇的語音
+            const preferredVoiceName = voicePreferences[langCode];
+            if (preferredVoiceName) {
+                const voice = voices.find(v => v.name === preferredVoiceName);
+                if (voice) {
+                    utterance.voice = voice;
+                }
+            }
+
+            const isAndroid = /Android/i.test(navigator.userAgent);
+            const delay = isAndroid ? 150 : 0;
+
+            setTimeout(() => {
+                if (isAndroid) {
+                    window.speechSynthesis.resume();
+                }
+                window.speechSynthesis.speak(utterance);
+            }, delay);
+        }
+
+        function resetVoiceSettings() {
+            if (confirm('確定要重置所有語音設定為預設嗎？')) {
+                voicePreferences = {};
+                localStorage.removeItem('traveltalk_voice_preferences');
+                renderVoiceOptions();
+                showVoiceWarning('已重置', '語音設定已恢復為系統預設');
+            }
         }
 
         // === 建議功能相關函數 ===
